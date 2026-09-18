@@ -5,7 +5,6 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.widget.Toast
 import java.io.File
 import java.io.FileOutputStream
 import androidx.activity.result.contract.ActivityResultContracts
@@ -18,27 +17,24 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
- * Einstiegspfad: Pairing + Medien-Scanner.
- *
- * Phase-1-Scaffold:
- *  - fragt Medien-Berechtigungen (Fotos + Videos) an
- *  - zählt lokale Medien über MediaStore und zeigt aus, dass der Zugriff funktioniert
- *
- * Datenschutz-Konzept: nur das Nötigste, alles kontrolliert, keine Fernzugriffe ohne
- * explizite Freigabe (siehe docs/DATENSCHUTZ.md).
+ * Messenger-artige Hauptansicht:
+ *  - Chat-Verlauf (User rechts, KI links)
+ *  - lokales Modell (Gemma) für Antworten
+ *  - Medien-Werkzeuge (Scan, Doubletten, Benchmark) als Unterhaltung
+ *  - Modell-Import im Header
  */
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
-    private val adapter = MediaAdapter()
-    private var scannedItems: List<MediaScanner.MediaItem> = emptyList()
+    private val chatAdapter = ChatAdapter()
+    private val messages = mutableListOf<ChatMessage>()
 
     private val mediaPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
             if (it.values.any { granted -> granted }) {
                 scanAndList()
             } else {
-                binding.status.text = getString(R.string.status_permission_denied)
+                assistant(getString(R.string.status_permission_denied))
             }
         }
 
@@ -53,7 +49,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         binding.recycler.layoutManager = LinearLayoutManager(this)
-        binding.recycler.adapter = adapter
+        binding.recycler.adapter = chatAdapter
 
         handleSharedUris(intent)
 
@@ -72,6 +68,26 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // ---- Chat-Helfer ----
+
+    private fun user(text: String) {
+        messages += ChatMessage(text, ChatMessage.Role.USER)
+        refreshChat()
+    }
+
+    private fun assistant(text: String) {
+        messages += ChatMessage(text, ChatMessage.Role.ASSISTANT)
+        binding.status.text = ""
+        refreshChat()
+    }
+
+    private fun refreshChat() {
+        chatAdapter.submitList(messages.toList())
+        binding.recycler.scrollToPosition(messages.size - 1)
+    }
+
+    // ---- Medien ----
+
     private fun requestMediaPermissions() {
         val permissions = mutableListOf<String>()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -84,16 +100,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun scanAndList() {
-        binding.status.text = getString(R.string.status_scanning)
+        assistant("Scanne deine Medien …")
         lifecycleScope.launch {
             val items = withContext(Dispatchers.IO) {
                 MediaScanner.listMedia(applicationContext)
             }
-            scannedItems = items
-            adapter.submit(items)
             val images = items.count { !it.isVideo }
             val videos = items.count { it.isVideo }
-            binding.status.text = getString(R.string.status_result, images, videos)
+            assistant("Gefunden: **$images Fotos** und **$videos Videos**.")
         }
     }
 
@@ -102,30 +116,26 @@ class MainActivity : AppCompatActivity() {
         val count = intent.getIntExtra("shared_count", 0)
         val uris = intent.getParcelableArrayListExtra<Uri>("shared_uris")
         if (count > 0 || !uris.isNullOrEmpty()) {
-            binding.status.text = "$count Datei(en) geteilt — Empfang in Warteschlange (nächster Schritt: Server)."
+            assistant("$count Datei(en) geteilt — Empfang in Warteschlange.")
         }
     }
 
     private fun findDuplicates() {
-        if (scannedItems.isEmpty()) {
-            binding.status.text = "Bitte zuerst Medien scannen."
-            return
-        }
-        binding.status.text = "Doubletten werden lokal gesucht …"
+        assistant("Suche lokale Doubletten (SHA-256, ohne Übertragung) …")
         lifecycleScope.launch {
+            val items = withContext(Dispatchers.IO) { MediaScanner.listMedia(applicationContext) }
             val groups = withContext(Dispatchers.IO) {
-                DuplicateScanner.findExactDuplicates(applicationContext, scannedItems)
+                DuplicateScanner.findExactDuplicates(applicationContext, items)
             }
             val duplicateFiles = groups.sumOf { it.items.size }
             val reclaimable = groups.sumOf { group ->
                 group.items.drop(1).sumOf { it.sizeBytes }
             }
-            binding.status.text = if (groups.isEmpty()) {
-                "Keine exakten Doubletten gefunden. (Nur lokal geprüft)"
+            assistant(if (groups.isEmpty()) {
+                "Keine exakten Doubletten gefunden."
             } else {
-                "%d Doubletten in %d Gruppen · %s belegter Speicher"
-                    .format(duplicateFiles, groups.size, humanBytes(reclaimable))
-            }
+                "$duplicateFiles Doubletten in ${groups.size} Gruppen · ${humanBytes(reclaimable)} belegter Speicher."
+            })
         }
     }
 
@@ -137,12 +147,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun runBenchmark() {
-        binding.status.text = "Leistungscheck läuft …"
+        assistant("Leistungscheck läuft …")
         lifecycleScope.launch {
             val result = withContext(Dispatchers.IO) {
                 PerformanceBenchmark.runBenchmark(applicationContext)
             }
-            binding.status.text = result.summary
+            assistant(result.summary)
         }
     }
 
@@ -159,9 +169,11 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             result.onSuccess { bytes ->
-                binding.status.text = "LLM-Modell importiert: ${bytes / 1_048_576} MB"
+                binding.status.text = "Modell importiert ✓"
+                assistant("Lokales Modell ist bereit (${bytes / 1_048_576} MB). Frag mich etwas!")
             }.onFailure { error ->
-                binding.status.text = "LLM-Import fehlgeschlagen: ${error.message}"
+                binding.status.text = "Import fehlgeschlagen"
+                assistant("Import fehlgeschlagen: ${error.message}")
             }
         }
     }
@@ -173,36 +185,37 @@ class MainActivity : AppCompatActivity() {
             return
         }
         if (!OnDeviceLlm.isModelInstalled(applicationContext)) {
-            binding.status.text = "Kein lokales Modell. Bitte zuerst importieren (LLM-Modell importieren)."
+            assistant("Es ist noch kein lokales Modell installiert — bitte oben auf **Import LLM** tippen.")
+            binding.inputPrompt.setText("")
             return
         }
-        binding.status.text = "Lokale Antwort wird erzeugt …"
+        user(prompt)
+        binding.inputPrompt.setText("")
+        binding.status.text = "Antwort wird erzeugt …"
         lifecycleScope.launch {
             val llm = OnDeviceLlm.createIfAvailable(applicationContext)
             val answer = withContext(Dispatchers.IO) {
                 llm?.generate(prompt) ?: "Lokales Modell ist nicht einsatzbereit."
             }
-            binding.status.text = answer
-            binding.inputPrompt.setText("")
+            assistant(answer)
             withContext(Dispatchers.IO) { llm?.close() }
         }
     }
 
     private fun runLocalLlmCheck() {
         if (OnDeviceLlm.isModelInstalled(applicationContext)) {
-            binding.status.text = "Lokales LLM: Modell ist installiert. Test läuft …"
+            binding.status.text = "Test läuft …"
             lifecycleScope.launch {
                 val llm = OnDeviceLlm.createIfAvailable(applicationContext)
                 val answer = withContext(Dispatchers.IO) {
-                    llm?.generate("Hallo von Hermes Companion! Antworte kurz in Deutsch.")
+                    llm?.generate("Hallo! Antworte kurz in Deutsch.")
                         ?: "Lokales Modell ist nicht einsatzbereit."
                 }
-                binding.status.text = "Lokal: $answer"
+                assistant(answer)
                 withContext(Dispatchers.IO) { llm?.close() }
             }
         } else {
-            binding.status.text = "Lokales LLM: kein Modell installiert. Pfad: " +
-                OnDeviceLlm.modelTargetPath(applicationContext)
+            assistant("Kein lokales Modell. Tippe oben auf **Import LLM**, um `gemma-3-1b.task` zu wählen.")
         }
     }
 }

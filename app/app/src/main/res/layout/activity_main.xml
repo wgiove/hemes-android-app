@@ -1,207 +1,152 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background"
-    android:fillViewport="true">
+    android:orientation="vertical">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <!-- Header -->
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:paddingHorizontal="20dp"
-        android:paddingBottom="24dp">
-
-        <!-- Header -->
-        <ImageView
-            android:id="@+id/app_icon"
-            android:layout_width="56dp"
-            android:layout_height="56dp"
-            android:layout_marginTop="24dp"
-            android:contentDescription="Hermes Companion"
-            android:src="@drawable/ic_launcher"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+        android:layout_height="?attr/actionBarSize"
+        android:background="?attr/colorSurface"
+        android:elevation="4dp"
+        android:paddingHorizontal="20dp">
 
         <TextView
-            android:id="@+id/title"
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="28dp"
             android:text="Hermes Companion"
             android:textColor="?attr/colorOnSurface"
-            android:textSize="24sp"
-            android:textStyle="bold"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@id/app_icon"
-            app:layout_constraintTop_toTopOf="parent" />
+            android:textSize="20sp"
+            android:textStyle="bold" />
 
-        <TextView
-            android:id="@+id/subtitle"
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <!-- Modell-Import als Icon-Aktion im Header -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_llm_import"
+            style="?attr/borderlessButtonStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:text="Import LLM"
+            android:textColor="@color/accent"
+            android:textSize="13sp" />
+    </androidx.appcompat.widget.Toolbar>
+
+    <TextView
+        android:id="@+id/status"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:minHeight="40dp"
+        android:paddingHorizontal="16dp"
+        android:text="Modell importieren, dann kannst du mir Fragen stellen."
+        android:textColor="?attr/colorOnSurfaceVariant"
+        android:textSize="13sp" />
+
+    <!-- Chat-Verlauf -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recycler"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:overScrollMode="never"
+        android:paddingVertical="8dp"
+        android:scrollbars="vertical" />
+
+    <!-- Bottom-Bar: Eingabe + Senden -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/colorSurface"
+        android:elevation="8dp"
+        android:orientation="horizontal"
+        android:padding="10dp">
+
+        <EditText
+            android:id="@+id/input_prompt"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="32dp"
-            android:text="Deine Medien- und KI-Verwaltung — lokal, sicher, tokenfrei."
-            android:textColor="?attr/colorOnSurfaceVariant"
-            android:textSize="14sp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/app_icon" />
+            android:layout_weight="1"
+            android:background="?attr/colorSurfaceVariant"
+            android:hint="Stelle mir eine Frage…"
+            android:imeOptions="actionSend"
+            android:inputType="text"
+            android:maxLines="4"
+            android:padding="12dp"
+            android:textColor="?attr/colorOnSurface"
+            android:textColorHint="?attr/colorOnSurfaceVariant" />
 
-        <!-- Sektion: Medien -->
-        <TextView
-            android:id="@+id/sec_media"
-            android:layout_width="0dp"
+        <Button
+            android:id="@+id/btn_send"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
+            android:layout_marginStart="8dp"
+            android:text="Senden" />
+    </LinearLayout>
+
+    <!-- Werkzeugleiste -->
+    <LinearLayout
+        android:id="@+id/toolbar_actions"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/colorSurface"
+        android:orientation="horizontal"
+        android:padding="8dp">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_scan"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_marginHorizontal="4dp"
+            android:layout_weight="1"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
             android:text="Medien"
-            android:textAllCaps="true"
-            android:textColor="@color/accent"
-            android:textSize="12sp"
-            android:textStyle="bold"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/subtitle" />
+            android:textSize="13sp" />
 
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/card_media"
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_duplicates"
+            style="?attr/materialButtonOutlinedStyle"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            app:cardBackgroundColor="?attr/colorSurface"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="2dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/sec_media">
+            android:layout_height="40dp"
+            android:layout_marginHorizontal="4dp"
+            android:layout_weight="1"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:text="Duplikate"
+            android:textSize="13sp" />
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <Button
-                    android:id="@+id/btn_scan"
-                    style="?attr/materialButtonOutlinedStyle"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Medien scannen" />
-
-                <Button
-                    android:id="@+id/btn_duplicates"
-                    style="?attr/materialButtonOutlinedStyle"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="Doubletten lokal finden" />
-
-                <Button
-                    android:id="@+id/btn_benchmark"
-                    style="?attr/materialButtonOutlinedStyle"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="Leistungscheck" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Sektion: Lokale KI -->
-        <TextView
-            android:id="@+id/sec_llm"
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_benchmark"
+            style="?attr/materialButtonOutlinedStyle"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:text="Lokale KI"
-            android:textAllCaps="true"
-            android:textColor="@color/accent"
-            android:textSize="12sp"
-            android:textStyle="bold"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/card_media" />
+            android:layout_height="40dp"
+            android:layout_marginHorizontal="4dp"
+            android:layout_weight="1"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:text="Check"
+            android:textSize="13sp" />
 
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/card_llm"
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_llm"
+            style="?attr/materialButtonOutlinedStyle"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            app:cardBackgroundColor="?attr/colorSurface"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="2dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/sec_llm">
+            android:layout_height="40dp"
+            android:layout_marginHorizontal="4dp"
+            android:layout_weight="1"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:text="Test"
+            android:textSize="13sp" />
+    </LinearLayout>
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <Button
-                    android:id="@+id/btn_llm"
-                    style="?attr/materialButtonOutlinedStyle"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Lokales LLM testen" />
-
-                <Button
-                    android:id="@+id/btn_llm_import"
-                    style="?attr/materialButtonOutlinedStyle"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="LLM-Modell importieren" />
-
-                <EditText
-                    android:id="@+id/input_prompt"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:background="?attr/colorSurfaceVariant"
-                    android:imeOptions="actionSend"
-                    android:hint="Stelle mir eine lokale Frage…"
-                    android:inputType="text"
-                    android:maxLines="3"
-                    android:padding="12dp"
-                    android:textColor="?attr/colorOnSurface"
-                    android:textColorHint="?attr/colorOnSurfaceVariant" />
-
-                <Button
-                    android:id="@+id/btn_send"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="Antwort senden" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Status -->
-        <TextView
-            android:id="@+id/status"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:gravity="center"
-            android:minHeight="48dp"
-            android:text="Modell importieren, dann kannst du mir eigene Prompts geben."
-            android:textColor="?attr/colorOnSurfaceVariant"
-            android:textSize="14sp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/card_llm" />
-
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recycler"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:overScrollMode="never"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/status" />
-
-    </androidx.constraintlayout.widget.ConstraintLayout>
-</ScrollView>
+</LinearLayout>
