@@ -55,6 +55,17 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/btn_scan" />
 
+    <Button
+        android:id="@+id/btn_benchmark"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="32dp"
+        android:layout_marginTop="8dp"
+        android:text="Leistungscheck"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/btn_duplicates" />
+
     <TextView
         android:id="@+id/status"
         android:layout_width="0dp"
@@ -67,7 +78,7 @@
         android:textSize="14sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/btn_duplicates" />
+        app:layout_constraintTop_toBottomOf="@id/btn_benchmark" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recycler"

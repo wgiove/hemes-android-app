@@ -21,5 +21,7 @@ Alle nennenswerten Änderungen dieses Projekts. Format in Anlehnung an [Keep a C
 - Größenvorsortierung vor Hashing, um unnötige Lesevorgänge und Akkuverbrauch zu reduzieren
 - UI-Aktion „Doubletten lokal finden“ mit Gruppen- und Speicheranzeige
 - APK erneut erfolgreich gebaut (5,7 MB)
+- Lokaler Leistungscheck: misst Medien-Scan, SHA-256-Geschwindigkeit und verfügbaren RAM
+  als Entscheidungsgrundlage für ein on-device LLM
 
 *Der Medien-Scanner und die lokale Duplikaterkennung sind funktional; Papierkorb, Pairing, LLM-Provider und Hermes-API folgen.*

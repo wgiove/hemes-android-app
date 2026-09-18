@@ -41,7 +41,7 @@ object DuplicateScanner {
             .sortedByDescending { it.totalBytes }
     }
 
-    private fun hashItem(context: Context, item: MediaScanner.MediaItem): String? {
+    fun hashItem(context: Context, item: MediaScanner.MediaItem): String? {
         return runCatching {
             val digest = MessageDigest.getInstance("SHA-256")
             context.contentResolver.openInputStream(item.uri)?.use { input ->

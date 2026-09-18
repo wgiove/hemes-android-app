@@ -48,6 +48,7 @@ class MainActivity : AppCompatActivity() {
 
         binding.btnScan.setOnClickListener { requestMediaPermissions() }
         binding.btnDuplicates.setOnClickListener { findDuplicates() }
+        binding.btnBenchmark.setOnClickListener { runBenchmark() }
     }
 
     private fun requestMediaPermissions() {
@@ -103,5 +104,15 @@ class MainActivity : AppCompatActivity() {
         bytes >= 1_048_576 -> "%.1f MB".format(bytes / 1_048_576.0)
         bytes >= 1024 -> "%.0f KB".format(bytes / 1024.0)
         else -> "$bytes B"
+    }
+
+    private fun runBenchmark() {
+        binding.status.text = "Leistungscheck läuft …"
+        lifecycleScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                PerformanceBenchmark.runBenchmark(applicationContext)
+            }
+            binding.status.text = result.summary
+        }
     }
 }
