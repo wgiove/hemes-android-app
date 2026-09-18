@@ -1,9 +1,13 @@
 package de.adversum.hermescompanion
 
 import android.Manifest
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
+import java.io.File
+import java.io.FileOutputStream
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
@@ -38,6 +42,11 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+    private val modelPicker =
+        registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
+            if (uri != null) importModel(uri)
+        }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -50,6 +59,9 @@ class MainActivity : AppCompatActivity() {
         binding.btnDuplicates.setOnClickListener { findDuplicates() }
         binding.btnBenchmark.setOnClickListener { runBenchmark() }
         binding.btnLlm.setOnClickListener { runLocalLlmCheck() }
+        binding.btnLlmImport.setOnClickListener {
+            modelPicker.launch(arrayOf("application/octet-stream", "application/*"))
+        }
     }
 
     private fun requestMediaPermissions() {
@@ -114,6 +126,26 @@ class MainActivity : AppCompatActivity() {
                 PerformanceBenchmark.runBenchmark(applicationContext)
             }
             binding.status.text = result.summary
+        }
+    }
+
+    private fun importModel(uri: Uri) {
+        binding.status.text = "LLM-Modell wird importiert …"
+        lifecycleScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                runCatching {
+                    val target = File(filesDir, OnDeviceLlm.MODEL_FILE)
+                    contentResolver.openInputStream(uri)?.use { input ->
+                        FileOutputStream(target).use { output -> input.copyTo(output) }
+                    } ?: error("Datei konnte nicht gelesen werden")
+                    target.length()
+                }
+            }
+            result.onSuccess { bytes ->
+                binding.status.text = "LLM-Modell importiert: ${bytes / 1_048_576} MB"
+            }.onFailure { error ->
+                binding.status.text = "LLM-Import fehlgeschlagen: ${error.message}"
+            }
         }
     }
 
