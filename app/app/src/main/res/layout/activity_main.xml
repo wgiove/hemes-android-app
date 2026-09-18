@@ -66,6 +66,17 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/btn_duplicates" />
 
+    <Button
+        android:id="@+id/btn_llm"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="32dp"
+        android:layout_marginTop="8dp"
+        android:text="Lokales LLM"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/btn_benchmark" />
+
     <TextView
         android:id="@+id/status"
         android:layout_width="0dp"
@@ -78,7 +89,7 @@
         android:textSize="14sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/btn_benchmark" />
+        app:layout_constraintTop_toBottomOf="@id/btn_llm" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recycler"

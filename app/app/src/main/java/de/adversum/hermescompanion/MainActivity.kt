@@ -49,6 +49,7 @@ class MainActivity : AppCompatActivity() {
         binding.btnScan.setOnClickListener { requestMediaPermissions() }
         binding.btnDuplicates.setOnClickListener { findDuplicates() }
         binding.btnBenchmark.setOnClickListener { runBenchmark() }
+        binding.btnLlm.setOnClickListener { runLocalLlmCheck() }
     }
 
     private fun requestMediaPermissions() {
@@ -113,6 +114,21 @@ class MainActivity : AppCompatActivity() {
                 PerformanceBenchmark.runBenchmark(applicationContext)
             }
             binding.status.text = result.summary
+        }
+    }
+
+    private fun runLocalLlmCheck() {
+        if (OnDeviceLlm.isModelInstalled(applicationContext)) {
+            binding.status.text = "Lokales LLM: Modell ist installiert. Test läuft …"
+            lifecycleScope.launch {
+                val llm = OnDeviceLlm.createIfAvailable(applicationContext)
+                val answer = llm?.generate("Hallo von Hermes Companion!")
+                    ?: "Lokales Modell ist nicht einsatzbereit."
+                binding.status.text = "Lokal: $answer"
+            }
+        } else {
+            binding.status.text = "Lokales LLM: kein Modell installiert. Pfad: " +
+                OnDeviceLlm.modelTargetPath(applicationContext)
         }
     }
 }
