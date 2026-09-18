@@ -75,7 +75,7 @@ Lokale Dateien auf dem Smartphone zu finden und zu verwalten ist aufwändig. Die
 projekte_hermes_android/
 ├── app/        # native Android-App (Kotlin)
 ├── server/     # Django-Hermes-Brücke (Pairing, Qdrant, Content)
-├── docs/       # Architektur, Datenschutz, Sicherheit
+├── docs/       # Architektur, Datenschutz, on-device LLM, Contributing
 ├── scripts/    # Entwicklungs-/Build-Helfer
 └── README.md
 ```
