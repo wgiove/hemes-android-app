@@ -154,9 +154,12 @@ class MainActivity : AppCompatActivity() {
             binding.status.text = "Lokales LLM: Modell ist installiert. Test läuft …"
             lifecycleScope.launch {
                 val llm = OnDeviceLlm.createIfAvailable(applicationContext)
-                val answer = llm?.generate("Hallo von Hermes Companion!")
-                    ?: "Lokales Modell ist nicht einsatzbereit."
+                val answer = withContext(Dispatchers.IO) {
+                    llm?.generate("Hallo von Hermes Companion! Antworte kurz in Deutsch.")
+                        ?: "Lokales Modell ist nicht einsatzbereit."
+                }
                 binding.status.text = "Lokal: $answer"
+                withContext(Dispatchers.IO) { llm?.close() }
             }
         } else {
             binding.status.text = "Lokales LLM: kein Modell installiert. Pfad: " +

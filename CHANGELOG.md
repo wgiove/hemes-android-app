@@ -25,6 +25,8 @@ Alle nennenswerten Änderungen dieses Projekts. Format in Anlehnung an [Keep a C
   als Entscheidungsgrundlage für ein on-device LLM
 - On-device LLM Provider-Slot über `tasks-genai` 0.10.27 (Gemma 3 1B), APP bleibt ohne
   Modell voll funktionsfähig (erwartet `gemma-3-1b.task` im internen Speicher)
+- Echte `LlmInference`-Integration: `createFromOptions` + `generateResponse`
+  (CPU-Backend default) — echte lokale Textgenerierung statt Platzhalter
 - APK durch ABI-Filter auf `arm64-v8a` reduziert (realme 9 Pro+): 59 MB → 20 MB
 
 *Der Medien-Scanner und die lokale Duplikaterkennung sind funktional; Papierkorb, Pairing, LLM-Provider und Hermes-API folgen.*
