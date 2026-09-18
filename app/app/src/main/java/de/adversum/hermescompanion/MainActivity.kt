@@ -55,6 +55,8 @@ class MainActivity : AppCompatActivity() {
         binding.recycler.layoutManager = LinearLayoutManager(this)
         binding.recycler.adapter = adapter
 
+        handleSharedUris(intent)
+
         binding.btnScan.setOnClickListener { requestMediaPermissions() }
         binding.btnDuplicates.setOnClickListener { findDuplicates() }
         binding.btnBenchmark.setOnClickListener { runBenchmark() }
@@ -92,6 +94,15 @@ class MainActivity : AppCompatActivity() {
             val images = items.count { !it.isVideo }
             val videos = items.count { it.isVideo }
             binding.status.text = getString(R.string.status_result, images, videos)
+        }
+    }
+
+    private fun handleSharedUris(intent: Intent?) {
+        intent ?: return
+        val count = intent.getIntExtra("shared_count", 0)
+        val uris = intent.getParcelableArrayListExtra<Uri>("shared_uris")
+        if (count > 0 || !uris.isNullOrEmpty()) {
+            binding.status.text = "$count Datei(en) geteilt — Empfang in Warteschlange (nächster Schritt: Server)."
         }
     }
 
