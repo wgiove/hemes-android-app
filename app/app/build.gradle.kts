@@ -13,6 +13,11 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "0.1.0-scaffold"
+        // realme 9 Pro+ ist ARM64; nur diese ABI einpacken, sonst wird das
+        // APK durch die LLM-Engine (+300%) aufgebläht.
+        ndk {
+            abiFilters += listOf("arm64-v8a")
+        }
     }
 
     buildTypes {
