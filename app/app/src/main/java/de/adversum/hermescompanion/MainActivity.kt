@@ -6,7 +6,12 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
 import de.adversum.hermescompanion.databinding.ActivityMainBinding
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Einstiegspfad: Pairing + Medien-Scanner.
@@ -21,11 +26,12 @@ import de.adversum.hermescompanion.databinding.ActivityMainBinding
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
+    private val adapter = MediaAdapter()
 
     private val mediaPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
             if (it.values.any { granted -> granted }) {
-                scanAndShowCount()
+                scanAndList()
             } else {
                 binding.status.text = getString(R.string.status_permission_denied)
             }
@@ -35,6 +41,9 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        binding.recycler.layoutManager = LinearLayoutManager(this)
+        binding.recycler.adapter = adapter
 
         binding.btnScan.setOnClickListener { requestMediaPermissions() }
     }
@@ -50,16 +59,16 @@ class MainActivity : AppCompatActivity() {
         mediaPermissionLauncher.launch(permissions.toTypedArray())
     }
 
-    private fun scanAndShowCount() {
+    private fun scanAndList() {
         binding.status.text = getString(R.string.status_scanning)
-        runCatching { MediaScanner.countMedia(applicationContext) }
-            .onSuccess { stats ->
-                binding.status.text =
-                    getString(R.string.status_result, stats.images, stats.videos)
+        lifecycleScope.launch {
+            val items = withContext(Dispatchers.IO) {
+                MediaScanner.listMedia(applicationContext)
             }
-            .onFailure { t ->
-                binding.status.text = getString(R.string.status_error, t.message.orEmpty())
-                Toast.makeText(this, t.message, Toast.LENGTH_SHORT).show()
-            }
+            adapter.submit(items)
+            val images = items.count { !it.isVideo }
+            val videos = items.count { it.isVideo }
+            binding.status.text = getString(R.string.status_result, images, videos)
+        }
     }
 }
