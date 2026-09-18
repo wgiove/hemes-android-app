@@ -62,6 +62,12 @@ class MainActivity : AppCompatActivity() {
         binding.btnLlmImport.setOnClickListener {
             modelPicker.launch(arrayOf("application/octet-stream", "application/*"))
         }
+        binding.btnSend.setOnClickListener { sendPrompt() }
+        binding.inputPrompt.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_SEND) {
+                sendPrompt(); true
+            } else false
+        }
     }
 
     private fun requestMediaPermissions() {
@@ -146,6 +152,28 @@ class MainActivity : AppCompatActivity() {
             }.onFailure { error ->
                 binding.status.text = "LLM-Import fehlgeschlagen: ${error.message}"
             }
+        }
+    }
+
+    private fun sendPrompt() {
+        val prompt = binding.inputPrompt.text.toString().trim()
+        if (prompt.isEmpty()) {
+            binding.status.text = "Bitte zuerst eine Frage eingeben."
+            return
+        }
+        if (!OnDeviceLlm.isModelInstalled(applicationContext)) {
+            binding.status.text = "Kein lokales Modell. Bitte zuerst importieren (LLM-Modell importieren)."
+            return
+        }
+        binding.status.text = "Lokale Antwort wird erzeugt …"
+        lifecycleScope.launch {
+            val llm = OnDeviceLlm.createIfAvailable(applicationContext)
+            val answer = withContext(Dispatchers.IO) {
+                llm?.generate(prompt) ?: "Lokales Modell ist nicht einsatzbereit."
+            }
+            binding.status.text = answer
+            binding.inputPrompt.setText("")
+            withContext(Dispatchers.IO) { llm?.close() }
         }
     }
 
