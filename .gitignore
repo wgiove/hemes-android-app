@@ -8,8 +8,11 @@ db.sqlite3
 *.log
 .env
 
-# Flutter / Android app
-app/build/
+# Android / Kotlin app (Gradle project lives in app/)
+app/.gradle/
+app/gradle-*/
+app/app/build/
+app/app/.cxx/
 app/.dart_tool/
 app/.flutter-plugins
 app/.flutter-plugins-dependencies

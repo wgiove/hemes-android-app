@@ -34,7 +34,11 @@ Verbindliche Ausbaustufen. Jedes abgeschlossene Stück landet als **Git-Tag** (z
 
 ---
 
-## Entscheidungshilfe: Flutter vs. nativ
+## Zusätzliche Entscheidung: App-Framework — ✅ KOTLIN (nativ) gewählt
+
+**Entscheidung (2026-09-18):** **nativer Kotlin/Android** statt Flutter. Grund: Werner will aktuell **kein iOS unterstützen**. Natives Kotlin gibt vollen direkten Zugriff auf `MediaStore`, `AccessibilityService` und `Storage Access Framework` ohne Plugin-Abstraktion — für Medien-Dedupe und die begrenzte Fernsteuerung die robusteste Wahl. iOS kann ggfs. später unabhängig entschieden werden (Toolchain-Hinweis: kein Android SDK auf dieser Umgebung → Toolchain wird separat unter `/opt/data/android-toolchain` bereitgehalten).
+
+## Entscheidungshilfe: Flutter vs. nativ (History)
 
 | Kriterium | Flutter | Nativ (Kotlin) |
 |---|---|---|

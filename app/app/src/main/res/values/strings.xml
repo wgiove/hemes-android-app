@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Hermes Companion</string>
+
+    <string name="status_permission_denied">Berechtigung verweigert. Für den Medienzugriff nötig.</string>
+    <string name="status_scanning">Scanne Medien…</string>
+    <string name="status_result">%1$d Fotos | %2$d Videos gefunden.</string>
+    <string name="status_error">Fehler: %1$s</string>
+</resources>

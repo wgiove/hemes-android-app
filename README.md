@@ -73,7 +73,7 @@ Lokale Dateien auf dem Smartphone zu finden und zu verwalten ist aufwändig. Die
 
 ```
 projekte_hermes_android/
-├── app/        # Android-App (Flutter/nativ — Entscheidung offen)
+├── app/        # native Android-App (Kotlin)
 ├── server/     # Django-Hermes-Brücke (Pairing, Qdrant, Content)
 ├── docs/       # Architektur, Datenschutz, Sicherheit
 ├── scripts/    # Entwicklungs-/Build-Helfer
@@ -100,6 +100,30 @@ Details siehe [`docs/ARCHITEKTUR.md`](docs/ARCHITEKTUR.md) und [`docs/DATENSCHUT
 
 **Phase 3:**
 - iOS, Multi-User/Mandantenfähigkeit für wenige Nutzer, Store-Publishing
+
+---
+
+## Lokaler Build (Kotlin/Android)
+
+Voraussetzungen:
+
+- JDK 17
+- Android SDK 35
+- Android Build Tools 35
+
+Aus dem Verzeichnis `app/`:
+
+```bash
+./gradlew :app:assembleDebug
+```
+
+Das Debug-APK liegt danach unter:
+
+```text
+app/app/build/outputs/apk/debug/app-debug.apk
+```
+
+Der aktuelle Scaffold fragt die Foto-/Video-Berechtigung an und zählt Medien read-only über `MediaStore`. Duplikaterkennung, Pairing und Hermes-API folgen in den nächsten Commits.
 
 ---
 
