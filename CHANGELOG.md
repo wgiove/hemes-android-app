@@ -28,5 +28,9 @@ Alle nennenswerten Änderungen dieses Projekts. Format in Anlehnung an [Keep a C
 - Echte `LlmInference`-Integration: `createFromOptions` + `generateResponse`
   (CPU-Backend default) — echte lokale Textgenerierung statt Platzhalter
 - APK durch ABI-Filter auf `arm64-v8a` reduziert (realme 9 Pro+): 59 MB → 20 MB
+- App erscheint als Android-Teil-Ziel für Bilder, Videos, PDFs und Dateien
+  (ACTION_SEND / SEND_MULTIPLE) und übernimmt geteilte URIs in die Warteschlange
+- Modernes UI-Redesign: Karten für „Medien“ und „Lokale KI“, Material-Design-Buttons,
+  Header mit App-Icon, saubere Abstände und Statuszeile
 
 *Der Medien-Scanner und die lokale Duplikaterkennung sind funktional; Papierkorb, Pairing, LLM-Provider und Hermes-API folgen.*
