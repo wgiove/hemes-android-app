@@ -27,6 +27,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private val adapter = MediaAdapter()
+    private var scannedItems: List<MediaScanner.MediaItem> = emptyList()
 
     private val mediaPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
@@ -46,6 +47,7 @@ class MainActivity : AppCompatActivity() {
         binding.recycler.adapter = adapter
 
         binding.btnScan.setOnClickListener { requestMediaPermissions() }
+        binding.btnDuplicates.setOnClickListener { findDuplicates() }
     }
 
     private fun requestMediaPermissions() {
@@ -65,10 +67,41 @@ class MainActivity : AppCompatActivity() {
             val items = withContext(Dispatchers.IO) {
                 MediaScanner.listMedia(applicationContext)
             }
+            scannedItems = items
             adapter.submit(items)
             val images = items.count { !it.isVideo }
             val videos = items.count { it.isVideo }
             binding.status.text = getString(R.string.status_result, images, videos)
         }
+    }
+
+    private fun findDuplicates() {
+        if (scannedItems.isEmpty()) {
+            binding.status.text = "Bitte zuerst Medien scannen."
+            return
+        }
+        binding.status.text = "Doubletten werden lokal gesucht …"
+        lifecycleScope.launch {
+            val groups = withContext(Dispatchers.IO) {
+                DuplicateScanner.findExactDuplicates(applicationContext, scannedItems)
+            }
+            val duplicateFiles = groups.sumOf { it.items.size }
+            val reclaimable = groups.sumOf { group ->
+                group.items.drop(1).sumOf { it.sizeBytes }
+            }
+            binding.status.text = if (groups.isEmpty()) {
+                "Keine exakten Doubletten gefunden. (Nur lokal geprüft)"
+            } else {
+                "%d Doubletten in %d Gruppen · %s belegter Speicher"
+                    .format(duplicateFiles, groups.size, humanBytes(reclaimable))
+            }
+        }
+    }
+
+    private fun humanBytes(bytes: Long): String = when {
+        bytes >= 1_073_741_824 -> "%.1f GB".format(bytes / 1_073_741_824.0)
+        bytes >= 1_048_576 -> "%.1f MB".format(bytes / 1_048_576.0)
+        bytes >= 1024 -> "%.0f KB".format(bytes / 1024.0)
+        else -> "$bytes B"
     }
 }

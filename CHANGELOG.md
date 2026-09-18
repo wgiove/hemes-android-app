@@ -17,5 +17,9 @@ Alle nennenswerten Änderungen dieses Projekts. Format in Anlehnung an [Keep a C
 - Sicherheitsorientiertes Manifest: nur Medien-Leserechte, kein Cleartext-Traffic
 - Android-Debug-APK erfolgreich gebaut (5,6 MB; SHA-256: `6fb00a8226aa9a02389dc1e43901895678000df24f591e055dd0d81d1520ff3c`)
 - Lokale Build-Toolchain dokumentiert: JDK 17, Android SDK 35, Gradle 8.7
+- Lokale exakte Duplikaterkennung per SHA-256 — keine KI, keine Übertragung, keine Tokens
+- Größenvorsortierung vor Hashing, um unnötige Lesevorgänge und Akkuverbrauch zu reduzieren
+- UI-Aktion „Doubletten lokal finden“ mit Gruppen- und Speicheranzeige
+- APK erneut erfolgreich gebaut (5,7 MB)
 
-*Der Medien-Scanner ist ein funktionaler Scaffold; Pairing, Deduplizierung und Hermes-API folgen in Phase 1.*
+*Der Medien-Scanner und die lokale Duplikaterkennung sind funktional; Papierkorb, Pairing, LLM-Provider und Hermes-API folgen.*
