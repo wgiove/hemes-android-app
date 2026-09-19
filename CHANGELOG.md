@@ -72,3 +72,9 @@ Alle nennenswerten Änderungen dieses Projekts. Format in Anlehnung an [Keep a C
   abgebrochener Import beschädigt das vorhandene Modell nicht mehr.
 - Crash-Handler schreibt Stacktraces in eine lokale Datei (crash.log);
   Menüeintrag „Crash-Protokoll anzeigen“ zeigt sie im Chat.
+
+## [v0.24-token-fallback-fix] – 2026-09-19
+- Tokenablage ausfallsicher: Wenn der Android Keystore nicht verfügbar ist, fällt die
+  App auf normale Ablage zurück und blockiert die Kopplung nicht mehr.
+- saveToken fängt jetzt jede Ausnahme; der Pairing-Vorgang scheitert nicht mehr,
+  nur weil verschlüsseltes Speichern fehlschlägt.

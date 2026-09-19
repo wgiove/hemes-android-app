@@ -62,10 +62,12 @@ object HermesBridge {
     }
 
     fun saveToken(token: String) {
-        context?.let { ctx ->
-            SecureStore.put(ctx, KEY_TOKEN, token)
-            ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
-                .remove(KEY_TOKEN).apply()
+        runCatching {
+            context?.let { ctx ->
+                SecureStore.put(ctx, KEY_TOKEN, token)
+                ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+                    .remove(KEY_TOKEN).apply()
+            }
         }
     }
 
