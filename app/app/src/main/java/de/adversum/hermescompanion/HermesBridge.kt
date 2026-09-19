@@ -47,12 +47,26 @@ object HermesBridge {
             ?.apply()
     }
 
-    fun token(): String? =
-        context?.getSharedPreferences(PREFS, Context.MODE_PRIVATE)?.getString(KEY_TOKEN, null)
+    fun token(): String? {
+        val ctx = context ?: return null
+        // Migration älterer Builds: Klartext-Token einmalig verschlüsseln und löschen.
+        SecureStore.get(ctx, KEY_TOKEN)?.let { return it }
+        val legacy = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .getString(KEY_TOKEN, null)
+        if (!legacy.isNullOrBlank()) {
+            SecureStore.put(ctx, KEY_TOKEN, legacy)
+            ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+                .remove(KEY_TOKEN).apply()
+        }
+        return legacy
+    }
 
     fun saveToken(token: String) {
-        context?.getSharedPreferences(PREFS, Context.MODE_PRIVATE)?.edit()
-            ?.putString(KEY_TOKEN, token)?.apply()
+        context?.let { ctx ->
+            SecureStore.put(ctx, KEY_TOKEN, token)
+            ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+                .remove(KEY_TOKEN).apply()
+        }
     }
 
     /** Letzten Pairing-Code merken, damit der Token später erneut abgeholt werden kann. */
