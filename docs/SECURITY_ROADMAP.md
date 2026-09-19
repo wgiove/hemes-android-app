@@ -26,6 +26,8 @@ Die Companion-App wird zur lokalen Hauptoberfläche. Serverzugriffe erfolgen nur
 - Morgen-Alarm (AlarmManager, einstellbare Uhrzeit) stößt die Zusammenfassung an und zeigt eine
   System-Benachrichtigung. Das Briefing ist im Menü „Tagesbriefing anzeigen“ aufrufbar.
 - Benachrichtigungszugriff und Benachrichtigungsfreigabe sind separat zu aktivieren (Menü).
+- Eigene App-Konfiguration im Menü: installierte startbare Apps als Checkbox-Liste, lokal gespeichert.
+- „Alle aus“ pausiert die Sammlung sofort.
 - Kein Import der Nachrichten in die Aiden-Brücke ohne sichtbare Bestätigung.
 
 ## Phase 3 — Sicherheitskonsole

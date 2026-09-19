@@ -1,6 +1,7 @@
 package de.adversum.hermescompanion
 
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
 import org.json.JSONArray
 import org.json.JSONObject
@@ -58,6 +59,22 @@ object BriefingStore {
 
     fun clear(context: Context) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().remove(KEY_ITEMS).apply()
+    }
+
+    data class AvailableApp(val packageName: String, val label: String)
+
+    /** Startbare Nutzer-Apps, die für die lokale Auswahl sinnvoll sichtbar sind. */
+    fun availableApps(context: Context): List<AvailableApp> {
+        val launchIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+        return context.packageManager.queryIntentActivities(launchIntent, 0)
+            .mapNotNull { info ->
+                val packageName = info.activityInfo?.packageName ?: return@mapNotNull null
+                val label = info.loadLabel(context.packageManager)?.toString()
+                    ?.takeIf { it.isNotBlank() } ?: packageName
+                AvailableApp(packageName, label)
+            }
+            .distinctBy { it.packageName }
+            .sortedBy { it.label.lowercase() }
     }
 
     fun enabledApps(context: Context): Set<String> {

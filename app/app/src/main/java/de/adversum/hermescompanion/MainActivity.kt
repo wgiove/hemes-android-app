@@ -379,6 +379,7 @@ class MainActivity : AppCompatActivity() {
         menu.menu.add(Menu.NONE, 5, 5, "📋 Tagesbriefing anzeigen")
         menu.menu.add(Menu.NONE, 8, 8, "🕑 Briefing-Zeit festlegen")
         menu.menu.add(Menu.NONE, 9, 9, "🔔 Benachrichtigungszugriff aktivieren")
+        menu.menu.add(Menu.NONE, 11, 11, "📲 Briefing-Apps konfigurieren")
         if (HermesBridge.isPaired()) {
             menu.menu.add(Menu.NONE, 7, 7, "Aiden ist gekoppelt ✓")
         } else {
@@ -398,6 +399,7 @@ class MainActivity : AppCompatActivity() {
                 5 -> showBriefing()
                 8 -> pickBriefingTime()
                 9 -> requestNotificationAccess()
+                11 -> configureBriefingApps()
                 6 -> startPairingFlow()
                 10 -> HermesBridge.lastPairingCode()?.let { showConfirmPairingOption(it) }
                 7 -> Unit
@@ -408,6 +410,37 @@ class MainActivity : AppCompatActivity() {
     }
 
     // ---- Tagesbriefing ----
+
+    private fun configureBriefingApps() {
+        val apps = BriefingStore.availableApps(this)
+        if (apps.isEmpty()) {
+            assistant("Ich konnte keine startbaren Apps auf dem Gerät finden.")
+            return
+        }
+        val enabled = BriefingStore.enabledApps(this)
+        val labels = apps.map { it.label }.toTypedArray()
+        val checked = apps.map { it.packageName in enabled }.toBooleanArray()
+        AlertDialog.Builder(this)
+            .setTitle("Briefing-Apps auswählen")
+            .setMessage("Nur markierte Apps dürfen lokale Benachrichtigungen zum Tagesbriefing beitragen.")
+            .setMultiChoiceItems(labels, checked) { _, which, isChecked ->
+                checked[which] = isChecked
+            }
+            .setNeutralButton("Alle aus") { _, _ ->
+                BriefingStore.setEnabledApps(this, emptySet())
+                assistant("Briefing-Sammlung pausiert: keine App ist ausgewählt.")
+            }
+            .setNegativeButton("Abbrechen", null)
+            .setPositiveButton("Speichern") { _, _ ->
+                val selected = apps.indices
+                    .filter { checked[it] }
+                    .map { apps[it].packageName }
+                    .toSet()
+                BriefingStore.setEnabledApps(this, selected)
+                assistant("Briefing-Konfiguration gespeichert: ${selected.size} App(s) ausgewählt. Alles bleibt lokal.")
+            }
+            .show()
+    }
 
     private fun showBriefing() {
         val items = BriefingStore.items(this)

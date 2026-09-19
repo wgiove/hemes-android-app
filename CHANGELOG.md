@@ -62,3 +62,7 @@ Alle nennenswerten Änderungen dieses Projekts. Format in Anlehnung an [Keep a C
 - Morgen-Alarm (AlarmManager) mit einstellbarer Uhrzeit erstellt lokale Zusammenfassung.
 - Menüeinträge: Tagesbriefing anzeigen, Briefing-Zeit festlegen, Benachrichtigungszugriff aktivieren.
 - Briefing-Einträge rein lokal; keine Weitergabe an Aiden ohne Bestätigung.
+
+## [v0.22-briefing-app-config] – 2026-09-19
+- Konfigurierbare lokale Briefing-App-Auswahl mit Checkbox-Liste installierter startbarer Apps.
+- Auswahl wird lokal gespeichert; „Alle aus“ pausiert die Sammlung.
