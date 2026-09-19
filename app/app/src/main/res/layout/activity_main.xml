@@ -36,6 +36,15 @@
             android:text="Import LLM"
             android:textColor="@color/accent"
             android:textSize="13sp" />
+
+        <ImageButton
+            android:id="@+id/btn_menu"
+            android:layout_width="48dp"
+            android:layout_height="match_parent"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Menü öffnen"
+            android:padding="12dp"
+            android:src="@drawable/ic_menu" />
     </androidx.appcompat.widget.Toolbar>
 
     <TextView
@@ -91,14 +100,21 @@
             android:text="Senden" />
     </LinearLayout>
 
-    <!-- Werkzeugleiste -->
-    <LinearLayout
+    <!-- Werkzeugleiste: horizontal scrollbar, lesbare feste Buttonbreiten -->
+    <HorizontalScrollView
         android:id="@+id/toolbar_actions"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="?attr/colorSurface"
-        android:orientation="horizontal"
-        android:padding="8dp">
+        android:fillViewport="false"
+        android:scrollbars="none"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="8dp">
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_scan"
@@ -157,8 +173,9 @@
             android:layout_weight="1"
             android:insetTop="0dp"
             android:insetBottom="0dp"
-            android:text="Pair"
+            android:text="Koppeln"
             android:textSize="13sp" />
-    </LinearLayout>
+        </LinearLayout>
+    </HorizontalScrollView>
 
 </LinearLayout>

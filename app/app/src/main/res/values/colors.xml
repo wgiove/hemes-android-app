@@ -3,4 +3,5 @@
     <color name="primary_dark">#2E536E</color>
     <color name="accent">#829768</color>
     <color name="background">#FFFDF8</color>
+    <color name="icon_on_surface">#263238</color>
 </resources>

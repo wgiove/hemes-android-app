@@ -45,5 +45,9 @@ Alle nennenswerten Änderungen dieses Projekts. Format in Anlehnung an [Keep a C
   Token-Abholung und Bearer-Command; Cleartext bleibt deaktiviert
 - Django-Brücke als systemd-Dienst auf dem VServer hinter Nginx/TLS deployed und per
   öffentlichem HTTPS-End-to-End getestet (Pairing → Authorize → Token → Command)
+- Werkzeuge in einem Burger-Menü gebündelt; aus dem Header entfernt, damit der Chat
+  nicht mehr von unlesbaren Buttons verdrängt wird
+- Hamburger-Menü als eigenes Vector-Icon mit Ripple und Dark-Mode-Farbe umgesetzt
+  (Medien, Duplikate, Leistungscheck, LLM-Test und Aiden-Kopplung als lesbare Menüeinträge)
 
 *Der Medien-Scanner und die lokale Duplikaterkennung sind funktional; Papierkorb, Pairing, LLM-Provider und Hermes-API folgen.*

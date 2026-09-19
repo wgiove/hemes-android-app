@@ -2,6 +2,8 @@ package de.adversum.hermescompanion
 
 import android.Manifest
 import android.app.AlertDialog
+import android.view.Menu
+import android.widget.PopupMenu
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -67,6 +69,7 @@ class MainActivity : AppCompatActivity() {
             modelPicker.launch(arrayOf("application/octet-stream", "application/*"))
         }
         binding.btnPair.setOnClickListener { startPairingFlow() }
+        binding.btnMenu.setOnClickListener { showToolsMenu() }
         binding.btnSend.setOnClickListener { sendPrompt() }
         binding.inputPrompt.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_SEND) {
@@ -238,6 +241,26 @@ class MainActivity : AppCompatActivity() {
             prompt.lowercase().contains("mail") || prompt.lowercase().contains("outlook") -> "E-Mail vorbereiten"
             else -> "Aktion für Aiden vorbereiten"
         }
+    }
+
+    private fun showToolsMenu() {
+        val menu = PopupMenu(this, binding.btnMenu)
+        menu.menu.add(Menu.NONE, 1, 1, "Medien scannen")
+        menu.menu.add(Menu.NONE, 2, 2, "Duplikate lokal finden")
+        menu.menu.add(Menu.NONE, 3, 3, "Leistungscheck")
+        menu.menu.add(Menu.NONE, 4, 4, "Lokales LLM testen")
+        menu.menu.add(Menu.NONE, 5, 5, "Aiden koppeln")
+        menu.setOnMenuItemClickListener { item ->
+            when (item.itemId) {
+                1 -> requestMediaPermissions()
+                2 -> findDuplicates()
+                3 -> runBenchmark()
+                4 -> runLocalLlmCheck()
+                5 -> startPairingFlow()
+            }
+            true
+        }
+        menu.show()
     }
 
     // ---- Pairing (Human-in-the-Loop: Code muss von Aiden/Werner bestätigt werden) ----
