@@ -120,6 +120,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        CrashLog.install(applicationContext)
 
         binding.recycler.layoutManager = LinearLayoutManager(this)
         binding.recycler.adapter = chatAdapter
@@ -298,11 +299,17 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch {
             val result = withContext(Dispatchers.IO) {
                 runCatching {
-                    val target = File(filesDir, OnDeviceLlm.MODEL_FILE)
-                    contentResolver.openInputStream(uri)?.use { input ->
-                        FileOutputStream(target).use { output -> input.copyTo(output) }
+                    // Erst in temporäre Datei kopieren, dann atomar umbenennen.
+                    // Ein abgebrochener Import lässt das vorhandene Modell unangetastet.
+                    // Ziel-Pfad ist identisch mit OnDeviceLlm.modelTargetPath (filesDir).
+                    val temp = File(filesDir, "modell_laden.task").apply { delete() }
+                    val bytes = contentResolver.openInputStream(uri)?.use { input ->
+                        FileOutputStream(temp).use { output -> input.copyTo(output) }
                     } ?: error("Datei konnte nicht gelesen werden")
-                    target.length()
+                    if (bytes <= 0) error("Die Datei ist leer.")
+                    val target = File(filesDir, OnDeviceLlm.MODEL_FILE)
+                    temp.renameTo(target) || error("Konnte Modell nicht an den Zielort verschieben.")
+                    bytes
                 }
             }
             result.onSuccess { bytes ->
@@ -380,6 +387,9 @@ class MainActivity : AppCompatActivity() {
         menu.menu.add(Menu.NONE, 8, 8, "🕑 Briefing-Zeit festlegen")
         menu.menu.add(Menu.NONE, 9, 9, "🔔 Benachrichtigungszugriff aktivieren")
         menu.menu.add(Menu.NONE, 11, 11, "📲 Briefing-Apps konfigurieren")
+        if (CrashLog.read(this) != null) {
+            menu.menu.add(Menu.NONE, 12, 12, "🛠 Crash-Protokoll anzeigen")
+        }
         if (HermesBridge.isPaired()) {
             menu.menu.add(Menu.NONE, 7, 7, "Aiden ist gekoppelt ✓")
         } else {
@@ -400,6 +410,7 @@ class MainActivity : AppCompatActivity() {
                 8 -> pickBriefingTime()
                 9 -> requestNotificationAccess()
                 11 -> configureBriefingApps()
+                12 -> showCrashReport()
                 6 -> startPairingFlow()
                 10 -> HermesBridge.lastPairingCode()?.let { showConfirmPairingOption(it) }
                 7 -> Unit
@@ -440,6 +451,16 @@ class MainActivity : AppCompatActivity() {
                 assistant("Briefing-Konfiguration gespeichert: ${selected.size} App(s) ausgewählt. Alles bleibt lokal.")
             }
             .show()
+    }
+
+    private fun showCrashReport() {
+        val report = CrashLog.read(this)
+        if (report == null) {
+            assistant("Kein Crash-Protokoll vorhanden.")
+            return
+        }
+        val trimmed = report.take(4000)
+        assistant("**Crash-Protokoll (lokal):**\n\n```\n$trimmed\n```\n\nSende mir das, damit ich die Ursache gezielt behebe.")
     }
 
     private fun showBriefing() {

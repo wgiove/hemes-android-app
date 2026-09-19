@@ -66,3 +66,9 @@ Alle nennenswerten Änderungen dieses Projekts. Format in Anlehnung an [Keep a C
 ## [v0.22-briefing-app-config] – 2026-09-19
 - Konfigurierbare lokale Briefing-App-Auswahl mit Checkbox-Liste installierter startbarer Apps.
 - Auswahl wird lokal gespeichert; „Alle aus“ pausiert die Sammlung.
+
+## [v0.23-llm-import-fix] – 2026-09-19
+- Modell-Import gehärtet: erst in temporäre Datei kopieren, dann atomar umbenennen;
+  abgebrochener Import beschädigt das vorhandene Modell nicht mehr.
+- Crash-Handler schreibt Stacktraces in eine lokale Datei (crash.log);
+  Menüeintrag „Crash-Protokoll anzeigen“ zeigt sie im Chat.
