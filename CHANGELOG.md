@@ -87,3 +87,8 @@ Alle nennenswerten Änderungen dieses Projekts. Format in Anlehnung an [Keep a C
 - Gmail, Outlook, WhatsApp, Instagram, LinkedIn, To Do und Kalender sind per <queries>
   als sichtbar deklariert und damit immer in der Briefing-Auswahl vorhanden,
   auch wenn ColorOS sie als System-Apps markiert.
+
+## [v0.27-grounded-briefing] – 2026-09-19
+- Tagesbericht/Tagesbriefing/Tageszusammenfassung werden strikt aus lokalen
+  Benachrichtigungen erzeugt und nicht mehr frei durch Gemma 1B generiert.
+- Verhindert erfundene Namen, Termine und Fakten bei Briefing-Anfragen.

@@ -336,6 +336,14 @@ class MainActivity : AppCompatActivity() {
         user(prompt)
         binding.inputPrompt.setText("")
 
+        // Tagesberichte werden strikt quellengebunden erzeugt. Das kleine lokale
+        // Modell darf hier nicht frei formulieren oder Fakten erfinden.
+        if (isBriefingRequest(prompt)) {
+            assistant("Ich verwende für den Tagesbericht nur die tatsächlich gespeicherten Benachrichtigungen — ohne erfundene Inhalte.")
+            showBriefing()
+            return
+        }
+
         // Erkennung serverlastiger Aufträge (Human-in-the-Loop).
         if (requiresServerAction(prompt)) {
             assistant(
@@ -358,6 +366,12 @@ class MainActivity : AppCompatActivity() {
             assistant(answer)
             withContext(Dispatchers.IO) { llm?.close() }
         }
+    }
+
+    private fun isBriefingRequest(prompt: String): Boolean {
+        val p = prompt.lowercase(Locale.GERMANY)
+        return listOf("tagesbericht", "tagesbriefing", "tageszusammenfassung", "heutiger bericht")
+            .any { it in p }
     }
 
     private fun requiresServerAction(prompt: String): Boolean {
