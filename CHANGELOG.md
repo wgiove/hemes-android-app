@@ -104,3 +104,9 @@ Alle nennenswerten Änderungen dieses Projekts. Format in Anlehnung an [Keep a C
   recherchierende oder umfangreiche Anfragen werden erkannt und mit Begründung
   als Human-in-the-Loop-Vorschlag an Aiden weitergegeben, statt lokal beantwortet
   zu werden. Keine Selbstbeurteilung durch das Modell, sondern robuste Merkmale.
+
+## [v0.30-trash-all-duplicates] – 2026-09-19
+- Nach dem Duplikat-Scan können alle exakten Duplikate gesammelt in den
+  Android-Papierkorb verschoben werden.
+- Pro Gruppe bleibt die neueste Datei erhalten.
+- Android zeigt eine eigene Bestätigung; endgültiges Löschen findet nicht statt.

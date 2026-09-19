@@ -16,6 +16,8 @@ import android.view.Menu
 import android.widget.PopupMenu
 import android.content.Intent
 import android.net.Uri
+import androidx.activity.result.IntentSenderRequest
+import android.provider.MediaStore
 import android.os.Build
 import android.os.Bundle
 import android.widget.EditText
@@ -76,6 +78,16 @@ class MainActivity : AppCompatActivity() {
             if (granted) startVoiceTranscription() else assistant("Für die Sprachnachricht ist eine Mikrofonfreigabe nötig.")
         }
 
+    private val trashRequestLauncher =
+        registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
+            if (result.resultCode == RESULT_OK) {
+                assistant("Die ausgewählten Duplikate wurden in den Papierkorb verschoben. Du kannst sie dort noch wiederherstellen.")
+            } else {
+                assistant("Das Verschieben wurde abgebrochen. Es wurde nichts gelöscht.")
+            }
+        }
+
+    private var pendingTrashCount = 0
     private var speechRecognizer: SpeechRecognizer? = null
     private var isListening = false
     private var lastTranscript = ""
@@ -265,15 +277,49 @@ class MainActivity : AppCompatActivity() {
             val groups = withContext(Dispatchers.IO) {
                 DuplicateScanner.findExactDuplicates(applicationContext, items)
             }
-            val duplicateFiles = groups.sumOf { it.items.size }
+            val duplicateFiles = groups.sumOf { (it.items.size - 1).coerceAtLeast(0) }
             val reclaimable = groups.sumOf { group ->
                 group.items.drop(1).sumOf { it.sizeBytes }
             }
             assistant(if (groups.isEmpty()) {
                 "Keine exakten Doubletten gefunden."
             } else {
-                "$duplicateFiles Doubletten in ${groups.size} Gruppen · ${humanBytes(reclaimable)} belegter Speicher."
+                "$duplicateFiles Dateien in ${groups.size} Gruppen · ${humanBytes(reclaimable)} belegter Speicher. " +
+                    "Pro Gruppe bleibt die neueste Datei erhalten."
             })
+            if (groups.isNotEmpty()) {
+                offerTrashAllDuplicates(groups)
+            }
+        }
+    }
+
+    private fun offerTrashAllDuplicates(groups: List<DuplicateScanner.DuplicateGroup>) {
+        val duplicateItems = groups.flatMap { group ->
+            group.items.sortedByDescending { it.dateTakenMs }.drop(1)
+        }.distinctBy { it.uri }
+        pendingTrashCount = duplicateItems.size
+        AlertDialog.Builder(this)
+            .setTitle("Alle Duplikate aufräumen?")
+            .setMessage(
+                "$pendingTrashCount exakte Duplikate werden in den Android-Papierkorb verschoben. " +
+                    "Pro Gruppe bleibt die neueste Datei erhalten. Nichts wird endgültig gelöscht."
+            )
+            .setNegativeButton("Abbrechen", null)
+            .setPositiveButton("In Papierkorb") { _, _ -> moveToTrash(duplicateItems.map { it.uri }) }
+            .show()
+    }
+
+    private fun moveToTrash(uris: List<Uri>) {
+        if (uris.isEmpty()) return
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+            assistant("Der sichere Android-Papierkorb ist auf dieser Android-Version nicht verfügbar. Es wurde nichts gelöscht.")
+            return
+        }
+        runCatching {
+            val request = MediaStore.createTrashRequest(contentResolver, uris, true)
+            trashRequestLauncher.launch(IntentSenderRequest.Builder(request.intentSender).build())
+        }.onFailure { error ->
+            assistant("Papierkorb-Anfrage konnte nicht geöffnet werden: ${error.message ?: "unbekannter Fehler"}")
         }
     }
 
