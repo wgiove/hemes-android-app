@@ -19,7 +19,7 @@ android {
             abiFilters += listOf("arm64-v8a")
         }
         // Hermes-Serverbrücke: hier die erreichbare URL eintragen (z. B. https://aiden.example.de)
-        buildConfigField("String", "HERMES_SERVER_URL", "\"\"")
+        buildConfigField("String", "HERMES_SERVER_URL", "\"https://aiden.adversum-business.de/mobile-api\"")
     }
 
     buildTypes {
