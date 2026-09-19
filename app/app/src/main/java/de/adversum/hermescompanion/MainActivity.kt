@@ -33,6 +33,7 @@ import android.provider.MediaStore
 import android.provider.OpenableColumns
 import android.os.Build
 import android.os.Bundle
+import android.os.SystemClock
 import android.widget.EditText
 import java.io.File
 import java.io.FileOutputStream
@@ -42,6 +43,9 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import de.adversum.hermescompanion.databinding.ActivityMainBinding
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -55,6 +59,7 @@ import kotlinx.coroutines.withContext
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
+    private var progressJob: Job? = null
     private val chatAdapter = ChatAdapter(
         onConfirm = { msg -> onConfirmedAction(msg) },
         onCancel = { msg -> onCancelledAction(msg) },
@@ -259,6 +264,24 @@ class MainActivity : AppCompatActivity() {
         refreshChat()
     }
 
+    private fun startProgress(label: String) {
+        progressJob?.cancel()
+        val started = SystemClock.elapsedRealtime()
+        progressJob = lifecycleScope.launch {
+            while (isActive) {
+                val seconds = (SystemClock.elapsedRealtime() - started) / 1000
+                binding.status.text = "$label ${seconds}s …"
+                delay(1000)
+            }
+        }
+    }
+
+    private fun stopProgress(message: String = "") {
+        progressJob?.cancel()
+        progressJob = null
+        binding.status.text = message
+    }
+
     private fun assistant(text: String, confirmation: ChatMessage.Confirmation? = null) {
         messages += ChatMessage(text, ChatMessage.Role.ASSISTANT, confirmation)
         binding.status.text = ""
@@ -316,6 +339,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun runFindDuplicates() {
         assistant("Suche lokale Doubletten (SHA-256, ohne Übertragung) …")
+        startProgress("Duplikate werden geprüft")
         lifecycleScope.launch {
             val items = withContext(Dispatchers.IO) { MediaScanner.listMedia(applicationContext) }
             val groups = withContext(Dispatchers.IO) {
@@ -325,6 +349,7 @@ class MainActivity : AppCompatActivity() {
             val reclaimable = groups.sumOf { group ->
                 group.items.drop(1).sumOf { it.sizeBytes }
             }
+            stopProgress()
             assistant(if (groups.isEmpty()) {
                 "Keine exakten Doubletten gefunden."
             } else {
@@ -343,17 +368,20 @@ class MainActivity : AppCompatActivity() {
 
     private fun runFindSimilarImages() {
         assistant("Suche ähnliche Fotos (perceptual, lokal, ohne Übertragung) … Dies kann je nach Bestand ein paar Sekunden dauern.")
+        startProgress("Ähnlichkeit wird berechnet")
         lifecycleScope.launch {
             val items = withContext(Dispatchers.IO) { MediaScanner.listMedia(applicationContext) }
             val groups = withContext(Dispatchers.IO) {
                 DuplicateScanner.findSimilarImages(applicationContext, items)
             }
             if (groups.isEmpty()) {
+                stopProgress()
                 assistant("Keine auffällig ähnlichen Fotos gefunden.")
                 return@launch
             }
             val files = groups.sumOf { it.size }
             val totalBytes = groups.sumOf { g -> g.drop(1).sumOf { it.sizeBytes } }
+            stopProgress()
             assistant(
                 "$files Fotos in ${groups.size} Ähnlichkeits-Gruppen · ${humanBytes(totalBytes)} potenziell doppelt.\n\n" +
                     "Diese sind **perceptual ähnlich** (gleiches Motiv), aber nicht zwingend identisch. " +
@@ -442,6 +470,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun scanDownloadFolder(treeUri: Uri) {
         assistant("Scannt den ausgewählten Ordner auf exakte Duplikate (lokal, ohne Übertragung) …")
+        startProgress("Download-Ordner wird gescannt")
         lifecycleScope.launch {
             val items = withContext(Dispatchers.IO) {
                 DownloadCleaner.listFolder(applicationContext, treeUri)
@@ -450,11 +479,13 @@ class MainActivity : AppCompatActivity() {
                 DownloadCleaner.findExactDuplicates(applicationContext, items)
             }
             if (groups.isEmpty()) {
+                stopProgress()
                 assistant("Keine exakten Duplikate in dem Ordner gefunden (${items.size} Dateien geprüft).")
                 return@launch
             }
             val dupCount = groups.sumOf { it.size - 1 }
             val bytes = groups.sumOf { g -> g.drop(1).sumOf { it.sizeBytes } }
+            stopProgress()
             assistant(
                 "$dupCount Duplikat(e) in ${groups.size} Gruppen · ${humanBytes(bytes)} belegter Speicher · ${items.size} Dateien gescannt."
             )
@@ -591,7 +622,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun importModel(uri: Uri) {
-        binding.status.text = "LLM-Modell wird importiert …"
+        startProgress("LLM wird importiert")
         lifecycleScope.launch {
             val result = withContext(Dispatchers.IO) {
                 runCatching {
@@ -609,12 +640,14 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             result.onSuccess { bytes ->
+                stopProgress()
                 val importedName = modelFileName(uri)
                 OnDeviceLlm.saveModelName(this@MainActivity, importedName)
                 binding.btnLlmImport.text = OnDeviceLlm.displayName(this@MainActivity)
                 binding.status.text = "Modell importiert ✓"
                 assistant("$importedName ist bereit (${bytes / 1_048_576} MB). Frag mich etwas!")
             }.onFailure { error ->
+                stopProgress()
                 binding.status.text = "Import fehlgeschlagen"
                 assistant("Import fehlgeschlagen: ${error.message}")
             }
@@ -671,12 +704,13 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        binding.status.text = "Antwort wird erzeugt …"
+        startProgress("Antwort wird erzeugt")
         lifecycleScope.launch {
             val llm = OnDeviceLlm.createIfAvailable(applicationContext)
             val answer = withContext(Dispatchers.IO) {
                 llm?.generate(prompt) ?: "Lokales Modell ist nicht einsatzbereit."
             }
+            stopProgress()
             assistant(answer)
             withContext(Dispatchers.IO) { llm?.close() }
         }

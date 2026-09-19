@@ -31,13 +31,13 @@ class OnDeviceLlm private constructor(
         }
 
         fun displayName(context: Context): String {
-            if (!isModelInstalled(context)) return "LLM importieren"
+            if (!isModelInstalled(context)) return "LLM installieren"
             val stored = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
                 .getString(KEY_MODEL_NAME, null)
                 ?.trim()
                 ?.removeSuffix(".task")
                 ?.takeIf { it.isNotBlank() }
-                ?: return "LLM aktiv ✓"
+                ?: return "LLM installieren"
             val lower = stored.lowercase()
             val shortName = when {
                 "gemma3" in lower && "1b" in lower -> "Gemma 3 1B"

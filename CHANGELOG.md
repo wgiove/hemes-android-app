@@ -144,3 +144,10 @@ Alle nennenswerten Änderungen dieses Projekts. Format in Anlehnung an [Keep a C
   „LLM aktiv ✓“, nach Import ein kurzer Modellname (z. B. „Gemma 3 1B ✓“).
 - Modellbutton im Header auf 112dp begrenzt und ellipsiert, damit das Burger-Menü
   sichtbar und vollständig bedienbar bleibt.
+
+## [v0.37-clear-model-status-progress] – 2026-09-19
+- Modellbutton zeigt bis zum erfolgreichen Import „LLM installieren“ und danach
+  den kurzen aktiven Modellnamen mit Häkchen.
+- Laufende längere Vorgänge zeigen in der Statuszeile eine fortlaufende Zeit:
+  Modellimport, lokale Duplikatsuche, Ähnlichkeitssuche, Download-Scan und
+  lokale LLM-Antwort.
