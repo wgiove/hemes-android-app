@@ -48,10 +48,15 @@ class MainActivity : AppCompatActivity() {
     )
     private val messages = mutableListOf<ChatMessage>()
 
+    private var pendingMediaAction: (() -> Unit)? = null
+
     private val mediaPermissionLauncher =
-        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
-            if (it.values.any { granted -> granted }) {
-                scanAndList()
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
+            val granted = result.values.any { it }
+            val action = pendingMediaAction
+            pendingMediaAction = null
+            if (granted) {
+                action?.invoke() ?: scanAndList()
             } else {
                 assistant(getString(R.string.status_permission_denied))
             }
@@ -238,7 +243,7 @@ class MainActivity : AppCompatActivity() {
 
     // ---- Medien ----
 
-    private fun requestMediaPermissions() {
+    private fun requestMediaPermissions(action: (() -> Unit)? = null) {
         val permissions = mutableListOf<String>()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             permissions += Manifest.permission.READ_MEDIA_IMAGES
@@ -246,6 +251,12 @@ class MainActivity : AppCompatActivity() {
         } else {
             permissions += Manifest.permission.READ_EXTERNAL_STORAGE
         }
+        val alreadyGranted = permissions.all { checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED }
+        if (alreadyGranted) {
+            action?.invoke() ?: scanAndList()
+            return
+        }
+        pendingMediaAction = action
         mediaPermissionLauncher.launch(permissions.toTypedArray())
     }
 
@@ -271,6 +282,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun findDuplicates() {
+        requestMediaPermissions { runFindDuplicates() }
+    }
+
+    private fun runFindDuplicates() {
         assistant("Suche lokale Doubletten (SHA-256, ohne Übertragung) …")
         lifecycleScope.launch {
             val items = withContext(Dispatchers.IO) { MediaScanner.listMedia(applicationContext) }
@@ -294,6 +309,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun findSimilarImages() {
+        requestMediaPermissions { runFindSimilarImages() }
+    }
+
+    private fun runFindSimilarImages() {
         assistant("Suche ähnliche Fotos (perceptual, lokal, ohne Übertragung) … Dies kann je nach Bestand ein paar Sekunden dauern.")
         lifecycleScope.launch {
             val items = withContext(Dispatchers.IO) { MediaScanner.listMedia(applicationContext) }

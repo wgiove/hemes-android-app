@@ -116,3 +116,8 @@ Alle nennenswerten Änderungen dieses Projekts. Format in Anlehnung an [Keep a C
   leicht angepasste Doppel mit gleichem Motiv, die SHA-256 nicht erkennt.
 - Rein lokal; ähnliche Fotos werden nur gemeldet und nicht automatisch entsorgt
   (Sichtprüfung nötig). Der Scan ist auf 1200 Bilder begrenzt, damit er schnell bleibt.
+
+## [v0.32-duplicate-permission-fix] – 2026-09-19
+- „Duplikate lokal finden“ und „Ähnliche Fotos suchen“ fordern jetzt vorher die
+  Medien-Berechtigung an und starten den Scan erst nach erfolgter Freigabe.
+  Vorher lieferte eine fehlende Freigabe irreführend „keine Duplikate gefunden“.
