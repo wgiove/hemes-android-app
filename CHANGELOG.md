@@ -133,3 +133,8 @@ Alle nennenswerten Änderungen dieses Projekts. Format in Anlehnung an [Keep a C
   findet exakte SHA-256-Duplikate aller Dateitypen (PDF, Word, ZIP, Audio, …).
 - Auswahl der Duplikate; Verschieben in einen wiederherstellbaren
   „Hermes-Papierkorb“-Unterordner im selben Speicher. Kein endgültiges Löschen.
+
+## [v0.35-model-name-display] – 2026-09-19
+- Header zeigt nach erfolgreichem Import den aktiven lokalen Modellnamen mit ✓
+  statt weiterhin „Import LLM“ an.
+- Modellname wird lokal gespeichert und nach App-Neustart wieder angezeigt.

@@ -30,6 +30,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.activity.result.IntentSenderRequest
 import android.provider.MediaStore
+import android.provider.OpenableColumns
 import android.os.Build
 import android.os.Bundle
 import android.widget.EditText
@@ -164,6 +165,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        binding.btnLlmImport.text = OnDeviceLlm.displayName(applicationContext)
         CrashLog.install(applicationContext)
 
         binding.recycler.layoutManager = LinearLayoutManager(this)
@@ -576,6 +578,18 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun modelFileName(uri: Uri): String {
+        val fromProvider = runCatching {
+            contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
+                ?.use { cursor ->
+                    if (cursor.moveToFirst()) cursor.getString(0) else null
+                }
+        }.getOrNull()
+        return fromProvider?.takeIf { it.isNotBlank() }
+            ?: uri.lastPathSegment?.substringAfterLast('/')?.ifBlank { null }
+            ?: "Lokales LLM"
+    }
+
     private fun importModel(uri: Uri) {
         binding.status.text = "LLM-Modell wird importiert …"
         lifecycleScope.launch {
@@ -595,8 +609,11 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             result.onSuccess { bytes ->
+                val importedName = modelFileName(uri)
+                OnDeviceLlm.saveModelName(this@MainActivity, importedName)
+                binding.btnLlmImport.text = OnDeviceLlm.displayName(this@MainActivity)
                 binding.status.text = "Modell importiert ✓"
-                assistant("Lokales Modell ist bereit (${bytes / 1_048_576} MB). Frag mich etwas!")
+                assistant("$importedName ist bereit (${bytes / 1_048_576} MB). Frag mich etwas!")
             }.onFailure { error ->
                 binding.status.text = "Import fehlgeschlagen"
                 assistant("Import fehlgeschlagen: ${error.message}")

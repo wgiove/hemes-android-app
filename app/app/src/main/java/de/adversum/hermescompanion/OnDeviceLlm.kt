@@ -21,6 +21,27 @@ class OnDeviceLlm private constructor(
 
     companion object {
         const val MODEL_FILE = "gemma-3-1b.task"
+        private const val PREFS = "hermes_llm"
+        private const val KEY_MODEL_NAME = "model_name"
+
+        fun saveModelName(context: Context, fileName: String) {
+            context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+                .putString(KEY_MODEL_NAME, fileName)
+                .apply()
+        }
+
+        fun displayName(context: Context): String {
+            if (!isModelInstalled(context)) return "LLM importieren"
+            val stored = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                .getString(KEY_MODEL_NAME, null)
+                ?.trim()
+                ?.removeSuffix(".task")
+                ?.replace("-", " ")
+                ?.replace("_", " ")
+                ?.takeIf { it.isNotBlank() }
+            val name = stored ?: "Gemma 3 1B INT4"
+            return "$name ✓"
+        }
 
         fun isModelInstalled(context: Context): Boolean =
             File(context.filesDir, MODEL_FILE).exists()
