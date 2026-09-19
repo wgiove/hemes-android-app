@@ -1,10 +1,12 @@
 package de.adversum.hermescompanion
 
 import android.Manifest
+import android.app.AlertDialog
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.widget.EditText
 import java.io.File
 import java.io.FileOutputStream
 import androidx.activity.result.contract.ActivityResultContracts
@@ -53,6 +55,7 @@ class MainActivity : AppCompatActivity() {
 
         binding.recycler.layoutManager = LinearLayoutManager(this)
         binding.recycler.adapter = chatAdapter
+        HermesBridge.init(applicationContext)
 
         handleSharedUris(intent)
 
@@ -63,6 +66,7 @@ class MainActivity : AppCompatActivity() {
         binding.btnLlmImport.setOnClickListener {
             modelPicker.launch(arrayOf("application/octet-stream", "application/*"))
         }
+        binding.btnPair.setOnClickListener { startPairingFlow() }
         binding.btnSend.setOnClickListener { sendPrompt() }
         binding.inputPrompt.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_SEND) {
@@ -234,6 +238,65 @@ class MainActivity : AppCompatActivity() {
             prompt.lowercase().contains("mail") || prompt.lowercase().contains("outlook") -> "E-Mail vorbereiten"
             else -> "Aktion für Aiden vorbereiten"
         }
+    }
+
+    // ---- Pairing (Human-in-the-Loop: Code muss von Aiden/Werner bestätigt werden) ----
+
+    private fun startPairingFlow() {
+        val input = EditText(this)
+        input.hint = HermesBridge.serverUrl().ifBlank { "https://SERVER-IP:8787" }
+
+        AlertDialog.Builder(this)
+            .setTitle("Aiden-Brücke koppeln")
+            .setMessage("Serveradresse (aus build config oder manuell):")
+            .setView(input)
+            .setPositiveButton("Pairing starten") { _, _ ->
+                val url = input.text.toString().trim()
+                if (url.isNotBlank()) HermesBridge.setServerUrl(url)
+                doPairing()
+            }
+            .setNegativeButton("Abbrechen", null)
+            .show()
+    }
+
+    private fun doPairing() {
+        assistant("Fordere Pairing-Code an …")
+        lifecycleScope.launch {
+            val code = HermesBridge.startPairing("realme 9 Pro+")
+            when {
+                code.startsWith("ERROR") -> assistant("Pairing fehlgeschlagen: $code")
+                else -> {
+                    assistant(
+                        "Dein Pairing-Code: **$code**. Schicke diesen Code an Aiden. " +
+                            "Sobald Aiden ihn bestätigt hat, tippe unten erneut auf **Pair** " +
+                            "und wähle **Token abholen**."
+                    )
+                    pendingPairingCode = code
+                    showConfirmPairingOption(code)
+                }
+            }
+        }
+    }
+
+    private var pendingPairingCode: String? = null
+
+    private fun showConfirmPairingOption(code: String) {
+        AlertDialog.Builder(this)
+            .setTitle("Pairing abschließen")
+            .setMessage("Hast du den Code $code an Aiden gesendet und bestätigt?")
+            .setPositiveButton("Token abholen") { _, _ ->
+                lifecycleScope.launch {
+                    val ok = HermesBridge.confirmPairing(code)
+                    if (ok) {
+                        assistant("Gerät erfolgreich gekoppelt ✓ Aktionen können jetzt an Aiden gesendet werden.")
+                        pendingPairingCode = null
+                    } else {
+                        assistant("Token konnte nicht abgeholt werden — wurde der Code von Aiden bestätigt?")
+                    }
+                }
+            }
+            .setNegativeButton("Später", null)
+            .show()
     }
 
     private fun onConfirmedAction(msg: ChatMessage) {
