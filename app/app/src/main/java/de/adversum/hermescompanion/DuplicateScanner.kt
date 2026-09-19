@@ -66,16 +66,26 @@ object DuplicateScanner {
      *
      * Nur Bilder (isVideo == false). Rein lokal, keine Übertragung.
      */
-    fun findSimilarImages(context: Context, items: List<MediaScanner.MediaItem>, threshold: Int = 10): List<List<MediaScanner.MediaItem>> {
+    fun findSimilarImages(
+        context: Context,
+        items: List<MediaScanner.MediaItem>,
+        threshold: Int = 10,
+        onProgress: ((Int, Int) -> Boolean)? = null,
+    ): List<List<MediaScanner.MediaItem>> {
         val images = items.filter { !it.isVideo }
         if (images.size < 2) return emptyList()
-        val maxScan = images.take(1200) // Schutz vor sehr großen Beständen
+        val maxScan = images.take(800) // begrenzt Laufzeit auf dem Gerät
 
         // dHash pro Bild berechnen (nur Fotos, Größenbuckets begrenzen Vergleiche).
         data class Bucket(val item: MediaScanner.MediaItem, val hash: Long)
-        val buckets = maxScan.mapNotNull { img ->
-            dHash(context, img.uri)?.let { Bucket(img, it) }
+        val buckets = mutableListOf<Bucket>()
+        maxScan.forEachIndexed { index, img ->
+            if (index % 25 == 0 && onProgress != null && !onProgress(index + 1, maxScan.size)) {
+                return emptyList()
+            }
+            dHash(context, img.uri)?.let { buckets.add(Bucket(img, it)) }
         }
+        onProgress?.invoke(maxScan.size, maxScan.size)
 
         val groups = mutableListOf<MutableList<MediaScanner.MediaItem>>()
         val used = BooleanArray(buckets.size)
@@ -98,15 +108,30 @@ object DuplicateScanner {
     /** dHash (difference hash): skaliert auf 9x8 Graustufen, 64-Bit-Fingerabdruck. */
     private fun dHash(context: Context, uri: android.net.Uri): Long? {
         return runCatching {
-            val stream = context.contentResolver.openInputStream(uri) ?: return null
-            val scaled = stream.use { input ->
-                val bmp = BitmapFactory.decodeStream(input) ?: return null
-                try {
-                    Bitmap.createScaledBitmap(bmp, 9, 8, true)
-                } finally {
-                    bmp.recycle()
-                }
+            // 1) Größe ermitteln, OHNE das Bild zu dekodieren.
+            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            context.contentResolver.openInputStream(uri)?.use { input ->
+                BitmapFactory.decodeStream(input, null, bounds)
             }
+            if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
+
+            // 2) Bild stark verkleinert dekodieren (Ziel ~ 64 px kurze Kante).
+            var sample = 1
+            val shorterSide = minOf(bounds.outWidth, bounds.outHeight)
+            while (shorterSide / sample > 128) sample *= 2
+
+            val options = BitmapFactory.Options().apply {
+                inSampleSize = sample
+                inPreferredConfig = Bitmap.Config.RGB_565
+            }
+            val small = context.contentResolver.openInputStream(uri)?.use { input ->
+                BitmapFactory.decodeStream(input, null, options)
+            } ?: return null
+
+            // 3) Nur noch auf 9x8 verkleinern — von einem bereits kleinen Bitmap.
+            val scaled = Bitmap.createScaledBitmap(small, 9, 8, true)
+            if (scaled !== small) small.recycle()
+
             val pixels = IntArray(9 * 8)
             scaled.getPixels(pixels, 0, 9, 0, 0, 9, 8)
             scaled.recycle()

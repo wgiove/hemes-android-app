@@ -60,6 +60,8 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private var progressJob: Job? = null
+    private var similarScanJob: Job? = null
+    @Volatile private var progressDetail: String = ""
     private val chatAdapter = ChatAdapter(
         onConfirm = { msg -> onConfirmedAction(msg) },
         onCancel = { msg -> onCancelledAction(msg) },
@@ -266,11 +268,17 @@ class MainActivity : AppCompatActivity() {
 
     private fun startProgress(label: String) {
         progressJob?.cancel()
+        progressDetail = ""
         val started = SystemClock.elapsedRealtime()
         progressJob = lifecycleScope.launch {
             while (isActive) {
                 val seconds = (SystemClock.elapsedRealtime() - started) / 1000
-                binding.status.text = "$label ${seconds}s …"
+                val detail = progressDetail
+                binding.status.text = if (detail.isEmpty()) {
+                    "$label ${seconds}s …"
+                } else {
+                    "$label · $detail · ${seconds}s …"
+                }
                 delay(1000)
             }
         }
@@ -363,17 +371,28 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun findSimilarImages() {
+        if (similarScanJob?.isActive == true) {
+            similarScanJob?.cancel()
+            similarScanJob = null
+            stopProgress()
+            assistant("Suche abgebrochen.")
+            return
+        }
         requestMediaPermissions { runFindSimilarImages() }
     }
 
     private fun runFindSimilarImages() {
-        assistant("Suche ähnliche Fotos (perceptual, lokal, ohne Übertragung) … Dies kann je nach Bestand ein paar Sekunden dauern.")
+        assistant("Suche ähnliche Fotos (perceptual, lokal, ohne Übertragung) … Tippe erneut auf „Ähnliche Fotos suchen“, um abzubrechen.")
         startProgress("Ähnlichkeit wird berechnet")
-        lifecycleScope.launch {
+        similarScanJob = lifecycleScope.launch {
             val items = withContext(Dispatchers.IO) { MediaScanner.listMedia(applicationContext) }
             val groups = withContext(Dispatchers.IO) {
-                DuplicateScanner.findSimilarImages(applicationContext, items)
+                DuplicateScanner.findSimilarImages(applicationContext, items) { done, total ->
+                    progressDetail = "$done/$total Fotos"
+                    similarScanJob?.isActive != false
+                }
             }
+            similarScanJob = null
             if (groups.isEmpty()) {
                 stopProgress()
                 assistant("Keine auffällig ähnlichen Fotos gefunden.")

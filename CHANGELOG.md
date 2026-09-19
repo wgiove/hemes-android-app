@@ -151,3 +151,10 @@ Alle nennenswerten Änderungen dieses Projekts. Format in Anlehnung an [Keep a C
 - Laufende längere Vorgänge zeigen in der Statuszeile eine fortlaufende Zeit:
   Modellimport, lokale Duplikatsuche, Ähnlichkeitssuche, Download-Scan und
   lokale LLM-Antwort.
+
+## [v0.38-fast-similar-scan] – 2026-09-19
+- Ähnlichkeitssuche war extrem langsam, weil jedes Foto in voller Auflösung
+  dekodiert wurde. Jetzt stark verkleinertes Dekodieren (inSampleSize + RGB_565),
+  Limit auf 800 Fotos; Laufzeit sinkt von Minuten auf Sekunden.
+- Statuszeile zeigt den Foto-Fortschritt (z. B. „250/800 Fotos").
+- Laufender Ähnlichkeitsscan ist über denselben Menüpunkt sofort abbrechbar.
