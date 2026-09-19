@@ -293,6 +293,28 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun findSimilarImages() {
+        assistant("Suche ähnliche Fotos (perceptual, lokal, ohne Übertragung) … Dies kann je nach Bestand ein paar Sekunden dauern.")
+        lifecycleScope.launch {
+            val items = withContext(Dispatchers.IO) { MediaScanner.listMedia(applicationContext) }
+            val groups = withContext(Dispatchers.IO) {
+                DuplicateScanner.findSimilarImages(applicationContext, items)
+            }
+            if (groups.isEmpty()) {
+                assistant("Keine auffällig ähnlichen Fotos gefunden.")
+                return@launch
+            }
+            val files = groups.sumOf { it.size }
+            val totalBytes = groups.sumOf { g -> g.drop(1).sumOf { it.sizeBytes } }
+            assistant(
+                "$files Fotos in ${groups.size} Ähnlichkeits-Gruppen · ${humanBytes(totalBytes)} potenziell doppelt.\n\n" +
+                    "Diese sind **perceptual ähnlich** (gleiches Motiv), aber nicht zwingend identisch. " +
+                    "Verschiebe sie bitte erst nach Sichtprüfung einzeln in den Papierkorb. " +
+                    "Ich habe nichts automatisch verschoben."
+            )
+        }
+    }
+
     private fun offerTrashAllDuplicates(groups: List<DuplicateScanner.DuplicateGroup>) {
         val duplicateItems = groups.flatMap { group ->
             group.items.sortedByDescending { it.dateTakenMs }.drop(1)
@@ -489,6 +511,7 @@ class MainActivity : AppCompatActivity() {
         val menu = PopupMenu(this, binding.btnMenu)
         menu.menu.add(Menu.NONE, 1, 1, "Medien scannen")
         menu.menu.add(Menu.NONE, 2, 2, "Duplikate lokal finden")
+        menu.menu.add(Menu.NONE, 13, 13, "Ähnliche Fotos suchen")
         menu.menu.add(Menu.NONE, 3, 3, "Leistungscheck")
         menu.menu.add(Menu.NONE, 4, 4, "Lokales LLM testen")
         menu.menu.add(Menu.NONE, 5, 5, "📋 Tagesbriefing anzeigen")
@@ -512,6 +535,7 @@ class MainActivity : AppCompatActivity() {
             when (item.itemId) {
                 1 -> requestMediaPermissions()
                 2 -> findDuplicates()
+                13 -> findSimilarImages()
                 3 -> runBenchmark()
                 4 -> runLocalLlmCheck()
                 5 -> showBriefing()

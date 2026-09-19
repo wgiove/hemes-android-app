@@ -110,3 +110,9 @@ Alle nennenswerten Änderungen dieses Projekts. Format in Anlehnung an [Keep a C
   Android-Papierkorb verschoben werden.
 - Pro Gruppe bleibt die neueste Datei erhalten.
 - Android zeigt eine eigene Bestätigung; endgültiges Löschen findet nicht statt.
+
+## [v0.31-perceptual-duplicates] – 2026-09-19
+- Neue Suche „Ähnliche Fotos“ (dHash/Perceptual): findet re-komprimierte oder
+  leicht angepasste Doppel mit gleichem Motiv, die SHA-256 nicht erkennt.
+- Rein lokal; ähnliche Fotos werden nur gemeldet und nicht automatisch entsorgt
+  (Sichtprüfung nötig). Der Scan ist auf 1200 Bilder begrenzt, damit er schnell bleibt.

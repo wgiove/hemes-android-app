@@ -1,6 +1,8 @@
 package de.adversum.hermescompanion
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import java.io.BufferedInputStream
 import java.security.MessageDigest
 
@@ -56,4 +58,77 @@ object DuplicateScanner {
             digest.digest().joinToString("") { byte -> "%02x".format(byte) }
         }.getOrNull()
     }
+
+    /**
+     * Erkennt ähnliche Fotos über einen perceptual Hash (dHash).
+     * Findet Doppel, die SHA-256 nicht sieht: re-komprimierte, erneut gespeicherte
+     * oder leicht angepasste Bilder mit gleichem Motiv.
+     *
+     * Nur Bilder (isVideo == false). Rein lokal, keine Übertragung.
+     */
+    fun findSimilarImages(context: Context, items: List<MediaScanner.MediaItem>, threshold: Int = 10): List<List<MediaScanner.MediaItem>> {
+        val images = items.filter { !it.isVideo }
+        if (images.size < 2) return emptyList()
+        val maxScan = images.take(1200) // Schutz vor sehr großen Beständen
+
+        // dHash pro Bild berechnen (nur Fotos, Größenbuckets begrenzen Vergleiche).
+        data class Bucket(val item: MediaScanner.MediaItem, val hash: Long)
+        val buckets = maxScan.mapNotNull { img ->
+            dHash(context, img.uri)?.let { Bucket(img, it) }
+        }
+
+        val groups = mutableListOf<MutableList<MediaScanner.MediaItem>>()
+        val used = BooleanArray(buckets.size)
+        for (i in buckets.indices) {
+            if (used[i]) continue
+            val group = mutableListOf(buckets[i].item)
+            used[i] = true
+            for (j in i + 1 until buckets.size) {
+                if (used[j]) continue
+                if (hamming(buckets[i].hash, buckets[j].hash) <= threshold) {
+                    group.add(buckets[j].item)
+                    used[j] = true
+                }
+            }
+            if (group.size > 1) groups.add(group)
+        }
+        return groups.sortedByDescending { it.size }
+    }
+
+    /** dHash (difference hash): skaliert auf 9x8 Graustufen, 64-Bit-Fingerabdruck. */
+    private fun dHash(context: Context, uri: android.net.Uri): Long? {
+        return runCatching {
+            val stream = context.contentResolver.openInputStream(uri) ?: return null
+            val scaled = stream.use { input ->
+                val bmp = BitmapFactory.decodeStream(input) ?: return null
+                try {
+                    Bitmap.createScaledBitmap(bmp, 9, 8, true)
+                } finally {
+                    bmp.recycle()
+                }
+            }
+            val pixels = IntArray(9 * 8)
+            scaled.getPixels(pixels, 0, 9, 0, 0, 9, 8)
+            scaled.recycle()
+
+            var hash = 0L
+            for (row in 0 until 8) {
+                for (col in 0 until 8) {
+                    val left = gray(pixels[row * 9 + col])
+                    val right = gray(pixels[row * 9 + col + 1])
+                    if (left > right) hash = hash or (1L shl (row * 8 + col))
+                }
+            }
+            hash
+        }.getOrNull()
+    }
+
+    private fun gray(pixel: Int): Int {
+        val r = (pixel shr 16) and 0xFF
+        val g = (pixel shr 8) and 0xFF
+        val b = pixel and 0xFF
+        return (r + g + b) / 3
+    }
+
+    private fun hamming(a: Long, b: Long): Int = java.lang.Long.bitCount(a xor b)
 }
