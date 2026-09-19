@@ -40,8 +40,10 @@ Alle nennenswerten Änderungen dieses Projekts. Format in Anlehnung an [Keep a C
   BuildConfig konfigurierte URL; Sicherheitsregel in `docs/HUMAN_IN_THE_LOOP.md`
 - Django-Serverbrücke (`server/`): Pairing (Code + authorize + Token), Bearer-Auth,
   Command-Endpunkt `/api/command`, serverseitiges Audit-Log (CommandLog)
-- App-Brücke real verdrahtet: Pair-Button, Server-URL-Dialog, Pairing-Code-Anzeige,
-  Token-Abholung; HttpURLConnection + INTERNET-Permission + Cleartext für lokalen
-  HTTP-Test
+- App-Brücke produktiv verdrahtet: feste HTTPS-Adresse
+  `https://aiden.adversum-business.de/mobile-api`, Pair-Button, Pairing-Code-Anzeige,
+  Token-Abholung und Bearer-Command; Cleartext bleibt deaktiviert
+- Django-Brücke als systemd-Dienst auf dem VServer hinter Nginx/TLS deployed und per
+  öffentlichem HTTPS-End-to-End getestet (Pairing → Authorize → Token → Command)
 
 *Der Medien-Scanner und die lokale Duplikaterkennung sind funktional; Papierkorb, Pairing, LLM-Provider und Hermes-API folgen.*
