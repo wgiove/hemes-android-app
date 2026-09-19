@@ -16,6 +16,24 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
 
+    <!-- Paketsichtbarkeit für bekannte Briefing-Apps (Gmail, Outlook, WhatsApp, …).
+         Erlaubt die Auswahl, ohne globale QUERY_ALL_PACKAGES-Berechtigung zu brauchen. -->
+    <queries>
+        <package android:name="com.whatsapp" />
+        <package android:name="com.whatsapp.w4b" />
+        <package android:name="com.instagram.android" />
+        <package android:name="com.linkedin.android" />
+        <package android:name="com.microsoft.office.outlook" />
+        <package android:name="com.microsoft.todos" />
+        <package android:name="com.google.android.gm" />
+        <package android:name="com.google.android.calendar" />
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="https" />
+        </intent>
+    </queries>
+
     <application
         android:allowBackup="false"
         android:fullBackupContent="false"

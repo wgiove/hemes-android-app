@@ -65,11 +65,23 @@ object BriefingStore {
     /** Sichtbare installierte Nutzer-Apps, die für Benachrichtigungen auswählbar sind. */
     fun availableApps(context: Context): List<AvailableApp> {
         val pm = context.packageManager
-        val apps = runCatching {
+
+        // 1) Bekannte Briefing-Apps sind immer sichtbar (per <queries> deklariert),
+        //    auch wenn ColorOS sie als System-Apps behandelt (Gmail, Outlook …).
+        val known = DEFAULT_APPS.mapNotNull { pkg ->
+            runCatching {
+                val info = pm.getApplicationInfo(pkg, 0)
+                AvailableApp(pkg, info.loadLabel(pm)?.toString() ?: pkg)
+            }.getOrNull()
+        }
+
+        // 2) Zusätzlich alle anderen sichtbaren, nicht systeminternen Nutzer-Apps.
+        val others = runCatching {
             pm.getInstalledApplications(0)
                 .asSequence()
                 .filter { it.packageName != context.packageName }
                 .filter { (it.flags and android.content.pm.ApplicationInfo.FLAG_SYSTEM) == 0 }
+                .filter { a -> known.none { it.packageName == a.packageName } }
                 .map { info ->
                     val label = info.loadLabel(pm)?.toString()
                         ?.takeIf { it.isNotBlank() } ?: info.packageName
@@ -78,15 +90,7 @@ object BriefingStore {
                 .toList()
         }.getOrDefault(emptyList())
 
-        // Falls ColorOS die App-Liste einschränkt, bleiben bekannte Briefing-Apps
-        // trotzdem auswählbar, sofern sie installiert sind.
-        val known = DEFAULT_APPS.mapNotNull { pkg ->
-            runCatching {
-                val info = pm.getApplicationInfo(pkg, 0)
-                AvailableApp(pkg, info.loadLabel(pm)?.toString() ?: pkg)
-            }.getOrNull()
-        }
-        return (apps + known).distinctBy { it.packageName }.sortedBy { it.label.lowercase() }
+        return (known + others).distinctBy { it.packageName }.sortedBy { it.label.lowercase() }
     }
 
     fun enabledApps(context: Context): Set<String> {

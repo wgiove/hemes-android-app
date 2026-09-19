@@ -82,3 +82,8 @@ Alle nennenswerten Änderungen dieses Projekts. Format in Anlehnung an [Keep a C
 ## [v0.25-briefing-app-list-fix] – 2026-09-19
 - Briefing-App-Auswahl nutzt robuste installierte Nutzer-App-Liste statt nur Launcher-Abfrage.
 - Checkbox-Dialog für ColorOS vereinfacht; bekannte Briefing-Apps bleiben als Fallback sichtbar.
+
+## [v0.26-known-apps-visible] – 2026-09-19
+- Gmail, Outlook, WhatsApp, Instagram, LinkedIn, To Do und Kalender sind per <queries>
+  als sichtbar deklariert und damit immer in der Briefing-Auswahl vorhanden,
+  auch wenn ColorOS sie als System-Apps markiert.
