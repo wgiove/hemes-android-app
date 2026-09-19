@@ -27,6 +27,7 @@ object HermesBridge {
     private const val PREFS = "hermes_bridge"
     private const val KEY_URL = "server_url"
     private const val KEY_TOKEN = "device_token"
+    private const val KEY_PAIR_CODE = "pairing_code"
 
     var context: Context? = null
 
@@ -53,6 +54,17 @@ object HermesBridge {
         context?.getSharedPreferences(PREFS, Context.MODE_PRIVATE)?.edit()
             ?.putString(KEY_TOKEN, token)?.apply()
     }
+
+    /** Letzten Pairing-Code merken, damit der Token später erneut abgeholt werden kann. */
+    fun savePairingCode(code: String) {
+        context?.getSharedPreferences(PREFS, Context.MODE_PRIVATE)?.edit()
+            ?.putString(KEY_PAIR_CODE, code)?.apply()
+    }
+
+    fun lastPairingCode(): String? =
+        context?.getSharedPreferences(PREFS, Context.MODE_PRIVATE)?.getString(KEY_PAIR_CODE, null)
+
+    fun isPaired(): Boolean = !token().isNullOrBlank()
 
     fun isConfigured(): Boolean = serverUrl().isNotBlank()
 

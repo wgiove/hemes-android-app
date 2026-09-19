@@ -1,5 +1,9 @@
 package de.adversum.hermescompanion
 
+import android.text.SpannableString
+import android.text.Spanned
+import android.text.style.StyleSpan
+import android.graphics.Typeface
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
@@ -33,7 +37,7 @@ class ChatAdapter(
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val msg = getItem(position)
         val bubble = holder.root.findViewById<TextView>(R.id.tvBubble)
-        bubble.text = msg.text
+        bubble.text = renderMarkdown(msg.text)
         bubble.setBackgroundResource(
             if (msg.isUser) R.drawable.bubble_user else R.drawable.bubble_assistant
         )
@@ -64,6 +68,29 @@ class ChatAdapter(
     }
 
     companion object {
+        /**
+         * Wandelt einfache Markdown-Auszeichnungen in echten Text um:
+         * `**fett**` wird fett dargestellt, die Sternchen verschwinden.
+         */
+        fun renderMarkdown(text: String): CharSequence {
+            if (!text.contains("**")) return text
+            val result = SpannableString(text.replace("**", ""))
+            var searchFrom = 0
+            while (true) {
+                val open = text.indexOf("**", searchFrom)
+                if (open < 0) break
+                val close = text.indexOf("**", open + 2)
+                if (close < 0) break
+                // Positionen im bereinigten Text: jedes frühere "**" entfernt 2 Zeichen
+                val occurrencesBefore = text.substring(0, open).split("**").size - 1
+                val start = open - 2 * occurrencesBefore
+                val end = start + (close - open - 2)
+                result.setSpan(StyleSpan(Typeface.BOLD), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                searchFrom = close + 2
+            }
+            return result
+        }
+
         private val DIFF = object : DiffUtil.ItemCallback<ChatMessage>() {
             override fun areItemsTheSame(a: ChatMessage, b: ChatMessage) = a === b
             override fun areContentsTheSame(a: ChatMessage, b: ChatMessage) =

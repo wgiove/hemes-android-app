@@ -250,6 +250,12 @@ class MainActivity : AppCompatActivity() {
         menu.menu.add(Menu.NONE, 3, 3, "Leistungscheck")
         menu.menu.add(Menu.NONE, 4, 4, "Lokales LLM testen")
         menu.menu.add(Menu.NONE, 5, 5, "Aiden koppeln")
+        val lastCode = HermesBridge.lastPairingCode()
+        if (!lastCode.isNullOrBlank() && !HermesBridge.isPaired()) {
+            menu.menu.add(Menu.NONE, 6, 6, "Token abholen (Code $lastCode)")
+        } else if (HermesBridge.isPaired()) {
+            menu.menu.add(Menu.NONE, 7, 7, "Aiden ist gekoppelt ✓")
+        }
         menu.setOnMenuItemClickListener { item ->
             when (item.itemId) {
                 1 -> requestMediaPermissions()
@@ -257,6 +263,8 @@ class MainActivity : AppCompatActivity() {
                 3 -> runBenchmark()
                 4 -> runLocalLlmCheck()
                 5 -> startPairingFlow()
+                6 -> lastCode?.let { showConfirmPairingOption(it) }
+                7 -> Unit
             }
             true
         }
@@ -295,6 +303,7 @@ class MainActivity : AppCompatActivity() {
                             "und wähle **Token abholen**."
                     )
                     pendingPairingCode = code
+                    HermesBridge.savePairingCode(code)
                     showConfirmPairingOption(code)
                 }
             }

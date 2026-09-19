@@ -50,4 +50,6 @@ Alle nennenswerten Änderungen dieses Projekts. Format in Anlehnung an [Keep a C
 - Hamburger-Menü als eigenes Vector-Icon mit Ripple und Dark-Mode-Farbe umgesetzt
   (Medien, Duplikate, Leistungscheck, LLM-Test und Aiden-Kopplung als lesbare Menüeinträge)
 
-*Der Medien-Scanner und die lokale Duplikaterkennung sind funktional; Papierkorb, Pairing, LLM-Provider und Hermes-API folgen.*
+*Der Medien-Scanner und die lokale Duplikaterkennung sind funktional; Papierkorb, Pairing, LLM-Provider und Hermes-API folgen.*- Pairing-Fluss abgesichert: letzter Code wird gespeichert, Menüeintrag
+  „Token abholen (Code …)" erlaubt Wiederaufnahme; Anzeige „Aiden ist gekoppelt ✓"
+- Markdown in Chat-Blasen wird gerendert (**fett** erscheint fett statt als Sternchen)
