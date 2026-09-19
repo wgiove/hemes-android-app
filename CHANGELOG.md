@@ -56,3 +56,9 @@ Alle nennenswerten Änderungen dieses Projekts. Format in Anlehnung an [Keep a C
 - Messenger-Eingabe neu: Anhang-Icon, lokales Mikrofon-Icon und Sendepfeil statt Textbutton
 - Mehrfach-Dateiauswahl über Android-Dateiauswahl; Dateien werden zunächst lokal übernommen
 - lokale deutsche Spracherkennung über Android On-Device SpeechRecognizer; Transkript landet bearbeitbar im Eingabefeld, keine automatische Aiden-Weitergabe
+
+## [v0.21-morning-briefing] – 2026-09-19
+- Tagesbriefing: Notification Listener sammelt lokal Benachrichtigungen ausgewählter Apps.
+- Morgen-Alarm (AlarmManager) mit einstellbarer Uhrzeit erstellt lokale Zusammenfassung.
+- Menüeinträge: Tagesbriefing anzeigen, Briefing-Zeit festlegen, Benachrichtigungszugriff aktivieren.
+- Briefing-Einträge rein lokal; keine Weitergabe an Aiden ohne Bestätigung.

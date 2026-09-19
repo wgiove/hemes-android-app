@@ -1,7 +1,13 @@
 package de.adversum.hermescompanion
 
 import android.Manifest
+import android.app.AlarmManager
 import android.app.AlertDialog
+import android.provider.Settings
+import android.app.TimePickerDialog
+import android.widget.Toast
+import java.text.SimpleDateFormat
+import java.util.Locale
 import android.content.pm.PackageManager
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
@@ -59,6 +65,12 @@ class MainActivity : AppCompatActivity() {
             if (uris.isNotEmpty()) handleSelectedFiles(uris)
         }
 
+    private val postNotificationsLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted) openNotificationListenerSettings()
+            else assistant("Ohne Benachrichtigungsberechtigung kann die App keine Briefing-Punkte anzeigen.")
+        }
+
     private val audioPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
             if (granted) startVoiceTranscription() else assistant("Für die Sprachnachricht ist eine Mikrofonfreigabe nötig.")
@@ -114,6 +126,7 @@ class MainActivity : AppCompatActivity() {
         HermesBridge.init(applicationContext)
 
         handleSharedUris(intent)
+        handleBriefingIntent(intent)
 
         binding.btnScan.setOnClickListener { requestMediaPermissions() }
         binding.btnDuplicates.setOnClickListener { findDuplicates() }
@@ -363,12 +376,18 @@ class MainActivity : AppCompatActivity() {
         menu.menu.add(Menu.NONE, 2, 2, "Duplikate lokal finden")
         menu.menu.add(Menu.NONE, 3, 3, "Leistungscheck")
         menu.menu.add(Menu.NONE, 4, 4, "Lokales LLM testen")
-        menu.menu.add(Menu.NONE, 5, 5, "Aiden koppeln")
-        val lastCode = HermesBridge.lastPairingCode()
-        if (!lastCode.isNullOrBlank() && !HermesBridge.isPaired()) {
-            menu.menu.add(Menu.NONE, 6, 6, "Token abholen (Code $lastCode)")
-        } else if (HermesBridge.isPaired()) {
+        menu.menu.add(Menu.NONE, 5, 5, "📋 Tagesbriefing anzeigen")
+        menu.menu.add(Menu.NONE, 8, 8, "🕑 Briefing-Zeit festlegen")
+        menu.menu.add(Menu.NONE, 9, 9, "🔔 Benachrichtigungszugriff aktivieren")
+        if (HermesBridge.isPaired()) {
             menu.menu.add(Menu.NONE, 7, 7, "Aiden ist gekoppelt ✓")
+        } else {
+            val lastCode = HermesBridge.lastPairingCode()
+            if (!lastCode.isNullOrBlank()) {
+                menu.menu.add(Menu.NONE, 10, 10, "Token abholen (Code $lastCode)")
+            } else {
+                menu.menu.add(Menu.NONE, 6, 6, "Aiden koppeln")
+            }
         }
         menu.setOnMenuItemClickListener { item ->
             when (item.itemId) {
@@ -376,13 +395,86 @@ class MainActivity : AppCompatActivity() {
                 2 -> findDuplicates()
                 3 -> runBenchmark()
                 4 -> runLocalLlmCheck()
-                5 -> startPairingFlow()
-                6 -> lastCode?.let { showConfirmPairingOption(it) }
+                5 -> showBriefing()
+                8 -> pickBriefingTime()
+                9 -> requestNotificationAccess()
+                6 -> startPairingFlow()
+                10 -> HermesBridge.lastPairingCode()?.let { showConfirmPairingOption(it) }
                 7 -> Unit
             }
             true
         }
         menu.show()
+    }
+
+    // ---- Tagesbriefing ----
+
+    private fun showBriefing() {
+        val items = BriefingStore.items(this)
+        if (items.isEmpty()) {
+            assistant(
+                "Noch keine Briefing-Einträge. Aktiviere unter **☰ → Benachrichtigungszugriff** " +
+                    "den Zugriff und öffne danach deine Apps (WhatsApp, Outlook, …), damit erkannte " +
+                    "Benachrichtigungen hier landen."
+            )
+            return
+        }
+        val today = SimpleDateFormat("EEEE, dd. MMMM yyyy", Locale.getDefault()).format(System.currentTimeMillis())
+        val summary = BriefingBuilder.defaultSummary(items)
+        val lines = summary.joinToString("\n") { "• $it" }
+        assistant(
+            "## 📋 Tagesbriefing — $today\n\n" +
+                "${items.size} lokale Benachrichtigung(en) seit dem letzten Leeren gesammelt.\n\n$lines\n\n" +
+                "_Alles rein lokal. Für eine Aiden-Zusammenfassung von Unterlagen erscheint vorher eine Bestätigung._"
+        )
+    }
+
+    private fun pickBriefingTime() {
+        val existing = BriefingAlarmReceiver.configuredTime(this)
+        val h = existing?.first ?: 7
+        val m = existing?.second ?: 0
+        TimePickerDialog(
+            this,
+            { _, hour, minute ->
+                BriefingAlarmReceiver.schedule(this, hour, minute)
+                val f = String.format(Locale.GERMANY, "%02d:%02d", hour, minute)
+                assistant("🕑 Tagesbriefing wird künftig um **$f Uhr** erstellt (lokal, über einen geplanten Alarm).")
+            },
+            h, m, true,
+        ).show()
+    }
+
+    private fun requestNotificationAccess() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            requestNotificationsPermission()
+            return
+        }
+        openNotificationListenerSettings()
+    }
+
+    private fun requestNotificationsPermission() {
+        postNotificationsLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+    }
+
+    private fun openNotificationListenerSettings() {
+        try {
+            startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+            assistant(
+                "Verbinde unter **Ein-Stellungen → Zugegriffene Apps** das Tagesbriefing von **Hermes Companion**. " +
+                    "Danach öffne kurz WhatsApp, Instagram, LinkedIn oder Outlook, damit Einträge gesammelt werden."
+            )
+        } catch (_: Exception) {
+            assistant("Benachrichtigungszugriff konnte nicht geöffnet werden. Bitte in den Systemeinstellungen unter „Zugegriffene Apps“ aktivieren.")
+        }
+    }
+
+    /** Haupt-Activity-Empfang für Öffnen über Briefing-Benachrichtigung. */
+    private fun handleBriefingIntent(intent: Intent?) {
+        if (intent?.action == "de.adversum.hermescompanion.OPEN_BRIEFING") {
+            showBriefing()
+        }
     }
 
     // ---- Pairing (Human-in-the-Loop: Code muss von Aiden/Werner bestätigt werden) ----

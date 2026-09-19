@@ -19,6 +19,15 @@ Die Companion-App wird zur lokalen Hauptoberfläche. Serverzugriffe erfolgen nur
 - Keine sensiblen Datei-/Transkriptinhalte in Standard-Logs.
 - Lokale verschlüsselte Ablage für importierte Arbeitsdateien mit Löschfunktion.
 
+## Tagesbriefing (neu)
+- Notification Listener sammelt lokal Benachrichtigungen ausgewählter Apps (Standardeinstellung:
+  WhatsApp, Instagram, LinkedIn, Outlook, Microsoft To Do, Gmail, Kalender).
+- Eventueller kurzer Text + Titel werden lokal gespeichert, nichts wird weitergeschickt.
+- Morgen-Alarm (AlarmManager, einstellbare Uhrzeit) stößt die Zusammenfassung an und zeigt eine
+  System-Benachrichtigung. Das Briefing ist im Menü „Tagesbriefing anzeigen“ aufrufbar.
+- Benachrichtigungszugriff und Benachrichtigungsfreigabe sind separat zu aktivieren (Menü).
+- Kein Import der Nachrichten in die Aiden-Brücke ohne sichtbare Bestätigung.
+
 ## Phase 3 — Sicherheitskonsole
 - Read-only PuTTY-Stil für lokale Diagnose.
 - WLAN: aktive Verbindung, Transport, Linkdaten und vom System erlaubte Scaninformationen.

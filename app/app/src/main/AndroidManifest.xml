@@ -4,6 +4,10 @@
     <!-- Netzwerk für die Aiden-Serverbrücke (Pairing, Command) -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
 
     <!-- Medien lesen (Phase 1): Fotos + Videos für Suche/Duplikate -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
@@ -79,5 +83,25 @@
                 <data android:mimeType="application/octet-stream" />
             </intent-filter>
         </activity>
+    <!-- Morgen-Briefing: sammelt Benachrichtigungen ausgewählter Apps -->
+        <service
+            android:name=".BriefingNotificationListener"
+            android:exported="false"
+            android:label="Hermes Tagesbriefing"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
+        <!-- stößt das Tagesbriefing einmal täglich an -->
+        <receiver
+            android:name=".BriefingAlarmReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="de.adversum.hermescompanion.DAILY_BRIEFING" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
     </application>
 </manifest>
