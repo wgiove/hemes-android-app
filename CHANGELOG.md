@@ -53,3 +53,6 @@ Alle nennenswerten Änderungen dieses Projekts. Format in Anlehnung an [Keep a C
 *Der Medien-Scanner und die lokale Duplikaterkennung sind funktional; Papierkorb, Pairing, LLM-Provider und Hermes-API folgen.*- Pairing-Fluss abgesichert: letzter Code wird gespeichert, Menüeintrag
   „Token abholen (Code …)" erlaubt Wiederaufnahme; Anzeige „Aiden ist gekoppelt ✓"
 - Markdown in Chat-Blasen wird gerendert (**fett** erscheint fett statt als Sternchen)
+- Messenger-Eingabe neu: Anhang-Icon, lokales Mikrofon-Icon und Sendepfeil statt Textbutton
+- Mehrfach-Dateiauswahl über Android-Dateiauswahl; Dateien werden zunächst lokal übernommen
+- lokale deutsche Spracherkennung über Android On-Device SpeechRecognizer; Transkript landet bearbeitbar im Eingabefeld, keine automatische Aiden-Weitergabe

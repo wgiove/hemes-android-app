@@ -2,6 +2,10 @@ package de.adversum.hermescompanion
 
 import android.Manifest
 import android.app.AlertDialog
+import android.content.pm.PackageManager
+import android.speech.RecognitionListener
+import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
 import android.view.Menu
 import android.widget.PopupMenu
 import android.content.Intent
@@ -50,6 +54,56 @@ class MainActivity : AppCompatActivity() {
             if (uri != null) importModel(uri)
         }
 
+    private val filePicker =
+        registerForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
+            if (uris.isNotEmpty()) handleSelectedFiles(uris)
+        }
+
+    private val audioPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted) startVoiceTranscription() else assistant("Für die Sprachnachricht ist eine Mikrofonfreigabe nötig.")
+        }
+
+    private var speechRecognizer: SpeechRecognizer? = null
+    private var isListening = false
+    private var lastTranscript = ""
+
+    private val speechListener = object : RecognitionListener {
+        override fun onReadyForSpeech(params: Bundle?) {
+            isListening = true
+            binding.status.text = "Ich höre zu … zum Beenden erneut auf das Mikrofon tippen."
+        }
+        override fun onBeginningOfSpeech() = Unit
+        override fun onRmsChanged(rmsdB: Float) = Unit
+        override fun onBufferReceived(buffer: ByteArray?) = Unit
+        override fun onEndOfSpeech() { isListening = false }
+        override fun onError(error: Int) {
+            isListening = false
+            binding.status.text = ""
+            if (lastTranscript.isBlank()) assistant("Ich konnte die Sprachnachricht nicht verstehen. Bitte versuche es erneut.")
+        }
+        override fun onResults(results: Bundle?) {
+            isListening = false
+            val text = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull().orEmpty()
+            if (text.isNotBlank()) {
+                lastTranscript = text
+                binding.inputPrompt.setText(text)
+                binding.inputPrompt.setSelection(text.length)
+                assistant("Transkript lokal erstellt. Du kannst es jetzt bearbeiten oder senden.")
+            }
+            binding.status.text = ""
+        }
+        override fun onPartialResults(partialResults: Bundle?) {
+            val text = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull().orEmpty()
+            if (text.isNotBlank()) {
+                lastTranscript = text
+                binding.inputPrompt.setText(text)
+                binding.inputPrompt.setSelection(text.length)
+            }
+        }
+        override fun onEvent(eventType: Int, params: Bundle?) = Unit
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -68,6 +122,10 @@ class MainActivity : AppCompatActivity() {
         binding.btnLlmImport.setOnClickListener {
             modelPicker.launch(arrayOf("application/octet-stream", "application/*"))
         }
+        binding.btnAttach.setOnClickListener {
+            filePicker.launch(arrayOf("image/*", "video/*", "audio/*", "application/pdf", "text/*", "*/*"))
+        }
+        binding.btnVoice.setOnClickListener { toggleVoiceTranscription() }
         binding.btnPair.setOnClickListener { startPairingFlow() }
         binding.btnMenu.setOnClickListener { showToolsMenu() }
         binding.btnSend.setOnClickListener { sendPrompt() }
@@ -76,6 +134,62 @@ class MainActivity : AppCompatActivity() {
                 sendPrompt(); true
             } else false
         }
+    }
+
+    private fun handleSelectedFiles(uris: List<Uri>) {
+        val names = uris.map { uri ->
+            uri.lastPathSegment?.substringAfterLast('/')?.ifBlank { "Datei" } ?: "Datei"
+        }
+        user("📎 ${names.joinToString(", ")}")
+        assistant(
+            "${uris.size} Datei(en) lokal übernommen. Ich kann sie jetzt lokal analysieren. " +
+                "Für Aiden-Vorgänge erscheint vor einer Weitergabe zuerst eine Bestätigung."
+        )
+    }
+
+    private fun toggleVoiceTranscription() {
+        if (isListening) {
+            speechRecognizer?.stopListening()
+            isListening = false
+            binding.status.text = ""
+        } else if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            startVoiceTranscription()
+        } else {
+            audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+        }
+    }
+
+    private fun startVoiceTranscription() {
+        if (!SpeechRecognizer.isRecognitionAvailable(this)) {
+            assistant("Auf diesem Gerät ist keine lokale Spracherkennung verfügbar.")
+            return
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+            !SpeechRecognizer.isOnDeviceRecognitionAvailable(this)
+        ) {
+            assistant("Keine lokale Spracherkennung verfügbar. Ich sende deine Stimme nicht automatisch online.")
+            return
+        }
+        speechRecognizer?.destroy()
+        speechRecognizer = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            SpeechRecognizer.createOnDeviceSpeechRecognizer(this)
+        } else {
+            SpeechRecognizer.createSpeechRecognizer(this)
+        }
+        speechRecognizer?.setRecognitionListener(speechListener)
+        lastTranscript = ""
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "de-DE")
+            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+        }
+        speechRecognizer?.startListening(intent)
+    }
+
+    override fun onDestroy() {
+        speechRecognizer?.destroy()
+        speechRecognizer = null
+        super.onDestroy()
     }
 
     // ---- Chat-Helfer ----
