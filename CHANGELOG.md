@@ -121,3 +121,8 @@ Alle nennenswerten Änderungen dieses Projekts. Format in Anlehnung an [Keep a C
 - „Duplikate lokal finden“ und „Ähnliche Fotos suchen“ fordern jetzt vorher die
   Medien-Berechtigung an und starten den Scan erst nach erfolgter Freigabe.
   Vorher lieferte eine fehlende Freigabe irreführend „keine Duplikate gefunden“.
+
+## [v0.33-similar-gallery] – 2026-09-19
+- Galerieansicht für ähnliche Fotos mit Vorschaubildern, Gruppen und Dateinamen.
+- Manuelle Checkbox-Auswahl je Bild; ausgewählte Bilder können über den Android-
+  Papierkorb verschoben werden. Keine automatische Löschung ähnlicher Bilder.

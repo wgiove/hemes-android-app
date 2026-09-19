@@ -6,6 +6,18 @@ import android.app.AlertDialog
 import android.provider.Settings
 import android.app.TimePickerDialog
 import android.widget.Toast
+import android.widget.CheckBox
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.ScrollView
+import android.widget.TextView
+import android.view.Gravity
+import android.view.ViewGroup
+import android.util.TypedValue
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.os.CancellationSignal
+import android.util.Size
 import java.text.SimpleDateFormat
 import java.util.Locale
 import android.content.pm.PackageManager
@@ -331,8 +343,87 @@ class MainActivity : AppCompatActivity() {
                     "Verschiebe sie bitte erst nach Sichtprüfung einzeln in den Papierkorb. " +
                     "Ich habe nichts automatisch verschoben."
             )
+            showSimilarGallery(groups)
         }
     }
+
+    private fun showSimilarGallery(groups: List<List<MediaScanner.MediaItem>>) {
+        val selected = linkedSetOf<Uri>()
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(8), dp(4), dp(8), dp(4))
+        }
+        groups.forEachIndexed { index, group ->
+            val header = TextView(this).apply {
+                text = "Gruppe ${index + 1} · ${group.size} ähnliche Fotos"
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
+                setPadding(dp(4), dp(8), dp(4), dp(4))
+            }
+            root.addView(header)
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+            }
+            group.forEach { item ->
+                lateinit var checkbox: CheckBox
+                val column = LinearLayout(this).apply {
+                    orientation = LinearLayout.VERTICAL
+                    gravity = Gravity.CENTER_HORIZONTAL
+                    layoutParams = LinearLayout.LayoutParams(dp(124), ViewGroup.LayoutParams.WRAP_CONTENT)
+                }
+                val image = ImageView(this).apply {
+                    scaleType = ImageView.ScaleType.CENTER_CROP
+                    setImageResource(R.drawable.ic_launcher)
+                    layoutParams = LinearLayout.LayoutParams(dp(112), dp(112))
+                    contentDescription = item.displayName
+                    setOnClickListener { checkbox.performClick() }
+                }
+                checkbox = CheckBox(this).apply {
+                    text = "Papierkorb"
+                    textSize = 11f
+                    setOnCheckedChangeListener { _, checked ->
+                        if (checked) selected.add(item.uri) else selected.remove(item.uri)
+                    }
+                }
+                val name = TextView(this).apply {
+                    text = item.displayName.take(18)
+                    textSize = 10f
+                    maxLines = 1
+                    ellipsize = android.text.TextUtils.TruncateAt.END
+                }
+                column.addView(image)
+                column.addView(checkbox)
+                column.addView(name)
+                row.addView(column)
+                lifecycleScope.launch {
+                    val bitmap = withContext(Dispatchers.IO) { loadThumbnail(item.uri) }
+                    if (bitmap != null && !isFinishing) image.setImageBitmap(bitmap)
+                }
+            }
+            root.addView(row)
+        }
+        val scroll = ScrollView(this).apply {
+            addView(root)
+            layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(480))
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Ähnliche Fotos prüfen")
+            .setMessage("Markiere nur Bilder, die wirklich in den Papierkorb sollen.")
+            .setView(scroll)
+            .setNegativeButton("Schließen", null)
+            .setPositiveButton("Auswahl in Papierkorb") { _, _ -> moveToTrash(selected.toList()) }
+            .show()
+    }
+
+    private fun loadThumbnail(uri: Uri): Bitmap? = runCatching {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            contentResolver.loadThumbnail(uri, Size(240, 240), CancellationSignal())
+        } else {
+            contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it) }
+        }
+    }.getOrNull()
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     private fun offerTrashAllDuplicates(groups: List<DuplicateScanner.DuplicateGroup>) {
         val duplicateItems = groups.flatMap { group ->
