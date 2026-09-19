@@ -36,11 +36,16 @@ class OnDeviceLlm private constructor(
                 .getString(KEY_MODEL_NAME, null)
                 ?.trim()
                 ?.removeSuffix(".task")
-                ?.replace("-", " ")
-                ?.replace("_", " ")
                 ?.takeIf { it.isNotBlank() }
-            val name = stored ?: "Gemma 3 1B INT4"
-            return "$name ✓"
+                ?: return "LLM aktiv ✓"
+            val lower = stored.lowercase()
+            val shortName = when {
+                "gemma3" in lower && "1b" in lower -> "Gemma 3 1B"
+                "gemma2" in lower && "2b" in lower -> "Gemma 2 2B"
+                "gemma3" in lower && "4b" in lower -> "Gemma 3 4B"
+                else -> stored.replace("-", " ").replace("_", " ").take(14)
+            }
+            return "$shortName ✓"
         }
 
         fun isModelInstalled(context: Context): Boolean =

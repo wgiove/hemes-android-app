@@ -138,3 +138,9 @@ Alle nennenswerten Änderungen dieses Projekts. Format in Anlehnung an [Keep a C
 - Header zeigt nach erfolgreichem Import den aktiven lokalen Modellnamen mit ✓
   statt weiterhin „Import LLM“ an.
 - Modellname wird lokal gespeichert und nach App-Neustart wieder angezeigt.
+
+## [v0.36-header-menu-fix] – 2026-09-19
+- Modellanzeige vor Import korrigiert: ohne gespeicherten Importnamen erscheint
+  „LLM aktiv ✓“, nach Import ein kurzer Modellname (z. B. „Gemma 3 1B ✓“).
+- Modellbutton im Header auf 112dp begrenzt und ellipsiert, damit das Burger-Menü
+  sichtbar und vollständig bedienbar bleibt.

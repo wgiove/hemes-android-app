@@ -31,11 +31,14 @@
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_llm_import"
             style="?attr/borderlessButtonStyle"
-            android:layout_width="wrap_content"
+            android:layout_width="112dp"
             android:layout_height="match_parent"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:minWidth="0dp"
             android:text="Import LLM"
             android:textColor="@color/accent"
-            android:textSize="13sp" />
+            android:textSize="12sp" />
 
         <ImageButton
             android:id="@+id/btn_menu"
