@@ -158,3 +158,9 @@ Alle nennenswerten Änderungen dieses Projekts. Format in Anlehnung an [Keep a C
   Limit auf 800 Fotos; Laufzeit sinkt von Minuten auf Sekunden.
 - Statuszeile zeigt den Foto-Fortschritt (z. B. „250/800 Fotos").
 - Laufender Ähnlichkeitsscan ist über denselben Menüpunkt sofort abbrechbar.
+
+## [v0.39-robust-similar-gallery] – 2026-09-19
+- Ähnlichkeits-Galerie kapselt Fehler und zeigt bei Problemen eine sichtbare
+  Meldung statt still zu verschwinden.
+- Vorschau auf maximal 12 Gruppen begrenzt, damit der Dialog bei vielen Treffern
+  nicht mehr im Speicher scheitert; Gesamtzahl bleibt als Hinweis sichtbar.

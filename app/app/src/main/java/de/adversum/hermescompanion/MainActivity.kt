@@ -58,6 +58,10 @@ import kotlinx.coroutines.withContext
  */
 class MainActivity : AppCompatActivity() {
 
+    companion object {
+        private const val PREVIEW_MAX_GROUPS = 12
+    }
+
     private lateinit var binding: ActivityMainBinding
     private var progressJob: Job? = null
     private var similarScanJob: Job? = null
@@ -401,23 +405,41 @@ class MainActivity : AppCompatActivity() {
             val files = groups.sumOf { it.size }
             val totalBytes = groups.sumOf { g -> g.drop(1).sumOf { it.sizeBytes } }
             stopProgress()
-            assistant(
-                "$files Fotos in ${groups.size} Ähnlichkeits-Gruppen · ${humanBytes(totalBytes)} potenziell doppelt.\n\n" +
-                    "Diese sind **perceptual ähnlich** (gleiches Motiv), aber nicht zwingend identisch. " +
-                    "Verschiebe sie bitte erst nach Sichtprüfung einzeln in den Papierkorb. " +
-                    "Ich habe nichts automatisch verschoben."
-            )
-            showSimilarGallery(groups)
+            val summary = "$files Fotos in ${groups.size} Ähnlichkeits-Gruppen · ${humanBytes(totalBytes)} potenziell doppelt.\n\n" +
+                "Diese sind **perceptual ähnlich** (gleiches Motiv), aber nicht zwingend identisch. " +
+                "Verschiebe sie bitte erst nach Sichtprüfung einzeln in den Papierkorb. " +
+                "Ich habe nichts automatisch verschoben."
+            runCatching { showSimilarGallery(groups) }
+                .onFailure { error ->
+                    assistant("$summary\n\n⚠️ Die Galerie-Vorschau konnte nicht angezeigt werden (${error.message}). Die Dateien kannst du weiterhin einzeln im Papierkorb bereinigen.")
+                }
+                .onSuccess { if (groups.isNotEmpty()) assistant(summary) }
         }
     }
 
     private fun showSimilarGallery(groups: List<List<MediaScanner.MediaItem>>) {
+        // Robuster: Vorschau begrenzen, damit der Dialog bei vielen Treffern nicht im
+        // Speicher scheitert. Alle Vorschauen sind reine Anzeige; die Auswahl in
+        // den Papierkorb bleibt bewusst manuell.
+        val totalImages = groups.sumOf { it.size }
+        val previewGroups = groups.take(PREVIEW_MAX_GROUPS)
+        val previewImages = previewGroups.sumOf { it.size }
+        val previewedTo = minOf(totalImages, previewImages)
+
         val selected = linkedSetOf<Uri>()
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(8), dp(4), dp(8), dp(4))
         }
-        groups.forEachIndexed { index, group ->
+        if (totalImages > previewedTo) {
+            val note = TextView(this).apply {
+                text = "Es werden nur die ersten $previewedTo von $totalImages Fotos zur Vorschau gezeigt, sonst wird der Dialog zu groß."
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+                setPadding(dp(4), dp(4), dp(4), dp(12))
+            }
+            root.addView(note)
+        }
+        previewGroups.forEachIndexed { index, group ->
             val header = TextView(this).apply {
                 text = "Gruppe ${index + 1} · ${group.size} ähnliche Fotos"
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
