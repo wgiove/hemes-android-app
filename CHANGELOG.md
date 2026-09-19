@@ -98,3 +98,9 @@ Alle nennenswerten Änderungen dieses Projekts. Format in Anlehnung an [Keep a C
 - Antwortlänge von 1024 auf 512 Tokens reduziert; Top-K auf 20 begrenzt,
   um sprachliches Driften und Fantasieausgaben zu verringern.
 - Tagesbriefing bleibt deterministisch quellengebunden.
+
+## [v0.29-capability-bounds] – 2026-09-19
+- Deterministische Grenz-Erkennung vor der lokalen Antwort: komplexe, fachliche,
+  recherchierende oder umfangreiche Anfragen werden erkannt und mit Begründung
+  als Human-in-the-Loop-Vorschlag an Aiden weitergegeben, statt lokal beantwortet
+  zu werden. Keine Selbstbeurteilung durch das Modell, sondern robuste Merkmale.

@@ -357,6 +357,21 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
+        // Grenz-Erkennung: Wenn die Anfrage über die Fähigkeiten des kleinen
+        // lokalen Modells hinausgeht, schlagen wir vor, sie an Aiden zu geben,
+        // statt eine schwache oder erfundene Antwort zu riskieren.
+        boundaryReason(prompt)?.let { reason ->
+            assistant(
+                "Diese Frage liegt außerhalb der zuverlässigen lokalen Fähigkeiten: **$reason**. " +
+                    "Soll ich sie an **Aiden** geben? Erst nach deiner Bestätigung wird sie übertragen.",
+                confirmation = ChatMessage.Confirmation(
+                    actionLabel = "An Aiden zur Beantwortung senden",
+                    targetDescription = "Lokale Grenze erkannt (${reason}): \"${prompt.take(120)}\"",
+                ),
+            )
+            return
+        }
+
         binding.status.text = "Antwort wird erzeugt …"
         lifecycleScope.launch {
             val llm = OnDeviceLlm.createIfAvailable(applicationContext)
@@ -379,6 +394,39 @@ class MainActivity : AppCompatActivity() {
         return listOf("word", "dokument", "docx", "pdf", "datei speichern", "aiden", "hermes",
             "erstellen und speichern", "instagram", "share", "senden an", "outlook", "mail")
             .any { p.contains(it) }
+    }
+
+    /**
+     * Deterministische Grenz-Erkennung. Gibt einen Grund zurück, warum die
+     * Anfrage an Aiden (Server) gehen sollte, statt lokal beantwortet zu werden.
+     * Null bedeutet: kann zuverlässig lokal bleiben. Keine Selbstbeurteilung
+     * durch das Modell — wir verlassen uns auf robuste Merkmale.
+     */
+    private fun boundaryReason(prompt: String): String? {
+        val p = prompt.lowercase(Locale.GERMANY)
+        // Mehrere Fragestrukturen oder sehr lange Eingaben lasten das kleine Modell über.
+        if (p.count { it == '?' } > 1) return "die Anfrage enthält mehrere Fragen"
+        if (prompt.length > 400) return "die Anfrage ist zu umfangreich für das lokale Modell"
+
+        // Fachliche, komplexe oder mehrdeutige Themen.
+        when {
+            listOf("analyse", "analysiere", "zusammenfassung", "bewertung", "interpretation",
+                "strategie", "konzept", "konzeption", "forschungsarbeit", "abschlussarbeit",
+                "masterarbeit", "epochenheft", "seminar", "gutachten").any { p.contains(it) } ->
+                return "das Thema benötigt Fachwissen und längere, präzise Textarbeit"
+
+            listOf("recherche", "aktuelle", "aktuelles", "nachrichten", "preise", "laufzeit",
+                "vergleich", "quellen", "zitat", "literatur").any { p.contains(it) } ->
+                return "aktuelle oder externe Informationen liegen lokal nicht vor"
+
+            listOf("übersetzen", "translate", "diplomarbeit", "vertrag", "rechtlich",
+                "gesetz", "steuer", "fachsprache", "wissenschaftlich").any { p.contains(it) } ->
+                return "fachlich/formal hochwertige Ausdrucksweise ist nötig"
+
+            p.contains("werner") && (p.contains("kalender") || p.contains("termin")) ->
+                return "Termin- und Kalenderdetails bräuchte ich aus deinem Outlook/Planner"
+        }
+        return null
     }
 
     private fun describeServerAction(prompt: String): String {
