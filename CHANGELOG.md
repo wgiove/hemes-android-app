@@ -78,3 +78,7 @@ Alle nennenswerten Änderungen dieses Projekts. Format in Anlehnung an [Keep a C
   App auf normale Ablage zurück und blockiert die Kopplung nicht mehr.
 - saveToken fängt jetzt jede Ausnahme; der Pairing-Vorgang scheitert nicht mehr,
   nur weil verschlüsseltes Speichern fehlschlägt.
+
+## [v0.25-briefing-app-list-fix] – 2026-09-19
+- Briefing-App-Auswahl nutzt robuste installierte Nutzer-App-Liste statt nur Launcher-Abfrage.
+- Checkbox-Dialog für ColorOS vereinfacht; bekannte Briefing-Apps bleiben als Fallback sichtbar.

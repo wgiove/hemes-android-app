@@ -1,7 +1,6 @@
 package de.adversum.hermescompanion
 
 import android.content.Context
-import android.content.Intent
 import android.content.SharedPreferences
 import org.json.JSONArray
 import org.json.JSONObject
@@ -63,18 +62,31 @@ object BriefingStore {
 
     data class AvailableApp(val packageName: String, val label: String)
 
-    /** Startbare Nutzer-Apps, die für die lokale Auswahl sinnvoll sichtbar sind. */
+    /** Sichtbare installierte Nutzer-Apps, die für Benachrichtigungen auswählbar sind. */
     fun availableApps(context: Context): List<AvailableApp> {
-        val launchIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
-        return context.packageManager.queryIntentActivities(launchIntent, 0)
-            .mapNotNull { info ->
-                val packageName = info.activityInfo?.packageName ?: return@mapNotNull null
-                val label = info.loadLabel(context.packageManager)?.toString()
-                    ?.takeIf { it.isNotBlank() } ?: packageName
-                AvailableApp(packageName, label)
-            }
-            .distinctBy { it.packageName }
-            .sortedBy { it.label.lowercase() }
+        val pm = context.packageManager
+        val apps = runCatching {
+            pm.getInstalledApplications(0)
+                .asSequence()
+                .filter { it.packageName != context.packageName }
+                .filter { (it.flags and android.content.pm.ApplicationInfo.FLAG_SYSTEM) == 0 }
+                .map { info ->
+                    val label = info.loadLabel(pm)?.toString()
+                        ?.takeIf { it.isNotBlank() } ?: info.packageName
+                    AvailableApp(info.packageName, label)
+                }
+                .toList()
+        }.getOrDefault(emptyList())
+
+        // Falls ColorOS die App-Liste einschränkt, bleiben bekannte Briefing-Apps
+        // trotzdem auswählbar, sofern sie installiert sind.
+        val known = DEFAULT_APPS.mapNotNull { pkg ->
+            runCatching {
+                val info = pm.getApplicationInfo(pkg, 0)
+                AvailableApp(pkg, info.loadLabel(pm)?.toString() ?: pkg)
+            }.getOrNull()
+        }
+        return (apps + known).distinctBy { it.packageName }.sortedBy { it.label.lowercase() }
     }
 
     fun enabledApps(context: Context): Set<String> {

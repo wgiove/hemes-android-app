@@ -433,7 +433,6 @@ class MainActivity : AppCompatActivity() {
         val checked = apps.map { it.packageName in enabled }.toBooleanArray()
         AlertDialog.Builder(this)
             .setTitle("Briefing-Apps auswählen")
-            .setMessage("Nur markierte Apps dürfen lokale Benachrichtigungen zum Tagesbriefing beitragen.")
             .setMultiChoiceItems(labels, checked) { _, which, isChecked ->
                 checked[which] = isChecked
             }
