@@ -104,6 +104,21 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+    private val downloadFolderPicker =
+        registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri: Uri? ->
+            if (uri != null) {
+                runCatching {
+                    contentResolver.takePersistableUriPermission(
+                        uri,
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
+                    )
+                }
+                scanDownloadFolder(uri)
+            } else {
+                assistant("Ordnerauswahl abgebrochen.")
+            }
+        }
+
     private var pendingTrashCount = 0
     private var speechRecognizer: SpeechRecognizer? = null
     private var isListening = false
@@ -423,6 +438,95 @@ class MainActivity : AppCompatActivity() {
         }
     }.getOrNull()
 
+    private fun scanDownloadFolder(treeUri: Uri) {
+        assistant("Scannt den ausgewählten Ordner auf exakte Duplikate (lokal, ohne Übertragung) …")
+        lifecycleScope.launch {
+            val items = withContext(Dispatchers.IO) {
+                DownloadCleaner.listFolder(applicationContext, treeUri)
+            }
+            val groups = withContext(Dispatchers.IO) {
+                DownloadCleaner.findExactDuplicates(applicationContext, items)
+            }
+            if (groups.isEmpty()) {
+                assistant("Keine exakten Duplikate in dem Ordner gefunden (${items.size} Dateien geprüft).")
+                return@launch
+            }
+            val dupCount = groups.sumOf { it.size - 1 }
+            val bytes = groups.sumOf { g -> g.drop(1).sumOf { it.sizeBytes } }
+            assistant(
+                "$dupCount Duplikat(e) in ${groups.size} Gruppen · ${humanBytes(bytes)} belegter Speicher · ${items.size} Dateien gescannt."
+            )
+            showDownloadDuplicates(treeUri, groups)
+        }
+    }
+
+    private fun showDownloadDuplicates(treeUri: Uri, groups: List<List<DownloadCleaner.DocItem>>) {
+        val selected = linkedSetOf<DownloadCleaner.DocItem>()
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(8), dp(4), dp(8), dp(4))
+        }
+        groups.forEachIndexed { index, group ->
+            val header = TextView(this).apply {
+                text = "Gruppe ${index + 1} · ${group.size} exakte Kopien"
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
+                setPadding(dp(4), dp(8), dp(4), dp(4))
+            }
+            root.addView(header)
+            group.forEach { item ->
+                val row = LinearLayout(this).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = Gravity.CENTER_VERTICAL
+                    setPadding(dp(4), dp(2), dp(4), dp(2))
+                }
+                val cb = CheckBox(this).apply {
+                    text = " ${item.displayName}" +
+                        (if (item.sizeBytes > 0) " · ${humanBytes(item.sizeBytes)}" else "")
+                    textSize = 12f
+                    setOnCheckedChangeListener { _, checked ->
+                        if (checked) selected.add(item) else selected.remove(item)
+                    }
+                }
+                row.addView(cb)
+                root.addView(row)
+            }
+        }
+        val scroll = ScrollView(this).apply {
+            addView(root)
+            layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(480))
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Duplikate im Ordner")
+            .setMessage("Markiere die Dateien, die in den Hermes-Papierkorb verschoben werden sollen. Sie bleiben wiederherstellbar.")
+            .setView(scroll)
+            .setNegativeButton("Schließen", null)
+            .setPositiveButton("In Hermes-Papierkorb") { _, _ ->
+                moveDownloadedToTrash(treeUri, selected.toList())
+            }
+            .show()
+    }
+
+    private fun moveDownloadedToTrash(treeUri: Uri, items: List<DownloadCleaner.DocItem>) {
+        if (items.isEmpty()) {
+            assistant("Keine Dateien ausgewählt.")
+            return
+        }
+        binding.status.text = "Verschiebe ${items.size} Datei(en) in den Hermes-Papierkorb …"
+        lifecycleScope.launch {
+            val moved = withContext(Dispatchers.IO) {
+                DownloadCleaner.moveToHermesTrash(applicationContext, treeUri, items)
+            }
+            binding.status.text = ""
+            assistant(
+                if (moved > 0) {
+                    "$moved der ${items.size} Datei(en) in den Ordner „Hermes-Papierkorb“ verschoben. Sie bleiben wiederherstellbar."
+                } else {
+                    "Es konnte keine Datei verschoben werden (Zugriff evtl. eingeschränkt)."
+                }
+            )
+        }
+    }
+
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     private fun offerTrashAllDuplicates(groups: List<DuplicateScanner.DuplicateGroup>) {
@@ -622,6 +726,7 @@ class MainActivity : AppCompatActivity() {
         menu.menu.add(Menu.NONE, 1, 1, "Medien scannen")
         menu.menu.add(Menu.NONE, 2, 2, "Duplikate lokal finden")
         menu.menu.add(Menu.NONE, 13, 13, "Ähnliche Fotos suchen")
+        menu.menu.add(Menu.NONE, 14, 14, "📁 Download-Ordner prüfen")
         menu.menu.add(Menu.NONE, 3, 3, "Leistungscheck")
         menu.menu.add(Menu.NONE, 4, 4, "Lokales LLM testen")
         menu.menu.add(Menu.NONE, 5, 5, "📋 Tagesbriefing anzeigen")
@@ -646,6 +751,7 @@ class MainActivity : AppCompatActivity() {
                 1 -> requestMediaPermissions()
                 2 -> findDuplicates()
                 13 -> findSimilarImages()
+                14 -> downloadFolderPicker.launch(null)
                 3 -> runBenchmark()
                 4 -> runLocalLlmCheck()
                 5 -> showBriefing()

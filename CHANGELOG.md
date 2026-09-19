@@ -126,3 +126,10 @@ Alle nennenswerten Änderungen dieses Projekts. Format in Anlehnung an [Keep a C
 - Galerieansicht für ähnliche Fotos mit Vorschaubildern, Gruppen und Dateinamen.
 - Manuelle Checkbox-Auswahl je Bild; ausgewählte Bilder können über den Android-
   Papierkorb verschoben werden. Keine automatische Löschung ähnlicher Bilder.
+
+## [v0.34-download-folder-cleaner] – 2026-09-19
+- Neuer Bereich „Download-Ordner prüfen“ (☰): wählt einen Ordner ausdrücklich
+  über die Android-Dateiauswahl (kein Vollzugriff), scannt ihn rekursiv und
+  findet exakte SHA-256-Duplikate aller Dateitypen (PDF, Word, ZIP, Audio, …).
+- Auswahl der Duplikate; Verschieben in einen wiederherstellbaren
+  „Hermes-Papierkorb“-Unterordner im selben Speicher. Kein endgültiges Löschen.
