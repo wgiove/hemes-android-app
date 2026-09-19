@@ -92,3 +92,9 @@ Alle nennenswerten Änderungen dieses Projekts. Format in Anlehnung an [Keep a C
 - Tagesbericht/Tagesbriefing/Tageszusammenfassung werden strikt aus lokalen
   Benachrichtigungen erzeugt und nicht mehr frei durch Gemma 1B generiert.
 - Verhindert erfundene Namen, Termine und Fakten bei Briefing-Anfragen.
+
+## [v0.28-german-language-guard] – 2026-09-19
+- Fester deutscher Qualitätsrahmen vor normalen lokalen Antworten.
+- Antwortlänge von 1024 auf 512 Tokens reduziert; Top-K auf 20 begrenzt,
+  um sprachliches Driften und Fantasieausgaben zu verringern.
+- Tagesbriefing bleibt deterministisch quellengebunden.

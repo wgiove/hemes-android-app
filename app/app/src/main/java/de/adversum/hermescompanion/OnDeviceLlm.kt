@@ -38,7 +38,9 @@ class OnDeviceLlm private constructor(
             return runCatching {
                 val options = LlmInference.LlmInferenceOptions.builder()
                     .setModelPath(path)
-                    .setMaxTokens(1024)
+                    .setMaxTokens(512)
+                    // Kleineres Top-K reduziert sprachliches Driften und Fantasieausgaben.
+                    .setMaxTopK(20)
                     .setPreferredBackend(backend)
                     .build()
                 OnDeviceLlm(LlmInference.createFromOptions(context, options))
@@ -48,7 +50,21 @@ class OnDeviceLlm private constructor(
 
     /** Führt eine lokal generierte Antwort aus. Muss auf IO-Thread laufen. */
     fun generate(prompt: String): String = runCatching {
-        inference.generateResponse(prompt)
+        val guardedPrompt = """
+            Du bist ein lokaler deutscher Assistent auf einem Android-Handy.
+            Antworte ausschließlich auf Deutsch und in natürlicher, klarer Alltagssprache.
+            Beantworte nur die konkrete Nutzerfrage.
+            Erfinde keine Namen, Termine, Quellen, Orte oder Fakten.
+            Wenn dir Informationen fehlen, sage genau das kurz und ehrlich.
+            Keine Fantasiegeschichte, keine Rollenfigur und keine englischen Floskeln,
+            außer der Nutzer bittet ausdrücklich darum.
+
+            Nutzerfrage:
+            $prompt
+
+            Deutsche Antwort:
+        """.trimIndent()
+        inference.generateResponse(guardedPrompt)
     }.getOrElse { throwable ->
         "Lokale Generierung fehlgeschlagen: ${throwable.message}"
     }
