@@ -32,5 +32,11 @@ Alle nennenswerten Änderungen dieses Projekts. Format in Anlehnung an [Keep a C
   (ACTION_SEND / SEND_MULTIPLE) und übernimmt geteilte URIs in die Warteschlange
 - Modernes UI-Redesign: Karten für „Medien“ und „Lokale KI“, Material-Design-Buttons,
   Header mit App-Icon, saubere Abstände und Statuszeile
+- Messenger-Chat-UI: Verlauf mit Blasen (User rechts/KI links), Eingabefeld unten,
+  Werkzeugleiste, Antworten auswählbar/kopierbar
+- Human-in-the-Loop (Bestätigungsansicht): serverlastige Aufträge (Word, PDF, Instagram,
+  Mail) werden vor der Übergabe an Aiden zur Bestätigung angezeigt
+- Hermes-Serverbrücke (`HermesBridge`): überträgt bestätigte Aufträge an eine per
+  BuildConfig konfigurierte URL; Sicherheitsregel in `docs/HUMAN_IN_THE_LOOP.md`
 
 *Der Medien-Scanner und die lokale Duplikaterkennung sind funktional; Papierkorb, Pairing, LLM-Provider und Hermes-API folgen.*

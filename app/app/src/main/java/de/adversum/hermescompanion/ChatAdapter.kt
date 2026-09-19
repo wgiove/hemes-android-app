@@ -1,27 +1,32 @@
 package de.adversum.hermescompanion
 
+import android.view.Gravity
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
+import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.constraintlayout.widget.ConstraintLayout
-import androidx.constraintlayout.widget.ConstraintSet
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 
 /**
  * Messenger-artiger Chat-Verlauf: User-Blase rechts, KI-Blase links.
+ * Optional mit Bestätigungsaktion (Human-in-the-Loop) für KI-Nachrichten.
  */
-class ChatAdapter :
-    ListAdapter<ChatMessage, ChatAdapter.ViewHolder>(DIFF) {
+class ChatAdapter(
+    private val onConfirm: (ChatMessage) -> Unit = {},
+    private val onCancel: (ChatMessage) -> Unit = {},
+) : ListAdapter<ChatMessage, ChatAdapter.ViewHolder>(DIFF) {
 
-    class ViewHolder(view: ConstraintLayout) : RecyclerView.ViewHolder(view) {
-        val root: ConstraintLayout = view
+    class ViewHolder(view: LinearLayout) : RecyclerView.ViewHolder(view) {
+        val root: LinearLayout = view
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.item_chat, parent, false) as ConstraintLayout
+            .inflate(R.layout.item_chat, parent, false) as LinearLayout
         return ViewHolder(view)
     }
 
@@ -37,26 +42,32 @@ class ChatAdapter :
                 if (msg.isUser) android.R.color.white else android.R.color.black
             )
         )
+        val lp = bubble.layoutParams as LinearLayout.LayoutParams
+        lp.gravity = if (msg.isUser) Gravity.END else Gravity.START
+        bubble.layoutParams = lp
 
-        // Blase rechts (User) wenn isUser, sonst links (Assistant)
-        val set = ConstraintSet()
-        set.clone(holder.root)
-        set.clear(R.id.tvBubble, ConstraintSet.START)
-        set.clear(R.id.tvBubble, ConstraintSet.END)
-        if (msg.isUser) {
-            set.connect(R.id.tvBubble, ConstraintSet.END, R.id.chat_item, ConstraintSet.END)
+        val confirmationRow = holder.root.findViewById<View>(R.id.confirmation_row)
+        val confirmBtn = holder.root.findViewById<Button>(R.id.btn_confirm)
+        val cancelBtn = holder.root.findViewById<Button>(R.id.btn_cancel)
+        val conf = msg.confirmation
+        if (conf != null) {
+            confirmationRow.visibility = View.VISIBLE
+            confirmBtn.text = conf.confirmLabel
+            cancelBtn.text = conf.cancelLabel
+            confirmBtn.setOnClickListener { onConfirm(msg) }
+            cancelBtn.setOnClickListener { onCancel(msg) }
         } else {
-            set.connect(R.id.tvBubble, ConstraintSet.START, R.id.chat_item, ConstraintSet.START)
+            confirmationRow.visibility = View.GONE
+            confirmBtn.setOnClickListener(null)
+            cancelBtn.setOnClickListener(null)
         }
-        set.connect(R.id.tvBubble, ConstraintSet.TOP, R.id.chat_item, ConstraintSet.TOP)
-        set.applyTo(holder.root)
     }
 
     companion object {
         private val DIFF = object : DiffUtil.ItemCallback<ChatMessage>() {
             override fun areItemsTheSame(a: ChatMessage, b: ChatMessage) = a === b
             override fun areContentsTheSame(a: ChatMessage, b: ChatMessage) =
-                a.text == b.text && a.role == b.role
+                a.text == b.text && a.role == b.role && a.confirmation == b.confirmation
         }
     }
 }

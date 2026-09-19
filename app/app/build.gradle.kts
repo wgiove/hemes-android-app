@@ -18,6 +18,8 @@ android {
         ndk {
             abiFilters += listOf("arm64-v8a")
         }
+        // Hermes-Serverbrücke: hier die erreichbare URL eintragen (z. B. https://aiden.example.de)
+        buildConfigField("String", "HERMES_SERVER_URL", "\"\"")
     }
 
     buildTypes {
@@ -38,6 +40,7 @@ android {
 
     buildFeatures {
         viewBinding = true
+        buildConfig = true
     }
 }
 

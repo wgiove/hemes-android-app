@@ -26,7 +26,10 @@ import kotlinx.coroutines.withContext
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
-    private val chatAdapter = ChatAdapter()
+    private val chatAdapter = ChatAdapter(
+        onConfirm = { msg -> onConfirmedAction(msg) },
+        onCancel = { msg -> onCancelledAction(msg) },
+    )
     private val messages = mutableListOf<ChatMessage>()
 
     private val mediaPermissionLauncher =
@@ -75,8 +78,8 @@ class MainActivity : AppCompatActivity() {
         refreshChat()
     }
 
-    private fun assistant(text: String) {
-        messages += ChatMessage(text, ChatMessage.Role.ASSISTANT)
+    private fun assistant(text: String, confirmation: ChatMessage.Confirmation? = null) {
+        messages += ChatMessage(text, ChatMessage.Role.ASSISTANT, confirmation)
         binding.status.text = ""
         refreshChat()
     }
@@ -191,6 +194,20 @@ class MainActivity : AppCompatActivity() {
         }
         user(prompt)
         binding.inputPrompt.setText("")
+
+        // Erkennung serverlastiger Aufträge (Human-in-the-Loop).
+        if (requiresServerAction(prompt)) {
+            assistant(
+                "Möchtest du, dass ich an Aiden schicke: **${describeServerAction(prompt)}**? " +
+                    "Erst nach deiner Bestätigung wird der Auftrag übergeben — nichts passiert automatisch.",
+                confirmation = ChatMessage.Confirmation(
+                    actionLabel = describeServerAction(prompt),
+                    targetDescription = "Aktion aus Prompt: \"${prompt.take(120)}\"",
+                ),
+            )
+            return
+        }
+
         binding.status.text = "Antwort wird erzeugt …"
         lifecycleScope.launch {
             val llm = OnDeviceLlm.createIfAvailable(applicationContext)
@@ -200,6 +217,61 @@ class MainActivity : AppCompatActivity() {
             assistant(answer)
             withContext(Dispatchers.IO) { llm?.close() }
         }
+    }
+
+    private fun requiresServerAction(prompt: String): Boolean {
+        val p = prompt.lowercase()
+        return listOf("word", "dokument", "docx", "pdf", "datei speichern", "aiden", "hermes",
+            "erstellen und speichern", "instagram", "share", "senden an", "outlook", "mail")
+            .any { p.contains(it) }
+    }
+
+    private fun describeServerAction(prompt: String): String {
+        return when {
+            prompt.lowercase().contains("word") || prompt.lowercase().contains("docx") -> "Word-Dokument erstellen"
+            prompt.lowercase().contains("pdf") -> "PDF erstellen"
+            prompt.lowercase().contains("instagram") -> "Instagram-Post vorbereiten"
+            prompt.lowercase().contains("mail") || prompt.lowercase().contains("outlook") -> "E-Mail vorbereiten"
+            else -> "Aktion für Aiden vorbereiten"
+        }
+    }
+
+    private fun onConfirmedAction(msg: ChatMessage) {
+        val conf = msg.confirmation ?: return
+        assistant("Sende Auftrag an Aiden: ${conf.actionLabel} …")
+        lifecycleScope.launch {
+            val answer = HermesBridge.sendAction(
+                conf.actionLabel,
+                conf.targetDescription,
+            )
+            assistant(answer)
+            // Nach der Bestätigung nicht erneut bestätigen lassen
+            replaceMessageWithPlain(msg, answer)
+        }
+    }
+
+    private fun onCancelledAction(msg: ChatMessage) {
+        assistant("Auftrag abgebrochen. Nichts wurde an Aiden gesendet.")
+        removeConfirmation(msg)
+    }
+
+    /** Ersetzt die bestätigte Vorschlags-Nachricht durch eine gewöhnliche KI-Blase. */
+    private fun replaceMessageWithPlain(original: ChatMessage, text: String) {
+        val idx = messages.indexOfFirst { it === original }
+        if (idx >= 0) {
+            messages[idx] = ChatMessage(text, ChatMessage.Role.ASSISTANT)
+        }
+        refreshChat()
+    }
+
+    private fun removeConfirmation(original: ChatMessage) {
+        val idx = messages.indexOfFirst { it === original }
+        if (idx >= 0 && original.confirmation != null) {
+            messages[idx] = original.copy(
+                confirmation = null
+            )
+        }
+        refreshChat()
     }
 
     private fun runLocalLlmCheck() {
